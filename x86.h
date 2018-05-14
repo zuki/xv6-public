@@ -1,4 +1,4 @@
-// Routines to let C code use special x86 instructions.
+// Cコードがx86特殊命令を使用できるようにするためのルーチン。
 
 static inline uchar
 inb(ushort port)
@@ -122,7 +122,7 @@ xchg(volatile uint *addr, uint newval)
 {
   uint result;
 
-  // The + in "+m" denotes a read-modify-write operand.
+  // "+m"の+はread-modify-writeオペランドを示す
   asm volatile("lock; xchgl %0, %1" :
                "+m" (*addr), "=a" (result) :
                "1" (newval) :
@@ -145,20 +145,20 @@ lcr3(uint val)
 }
 
 //PAGEBREAK: 36
-// Layout of the trap frame built on the stack by the
-// hardware and by trapasm.S, and passed to trap().
+// ハードウェアとtrapasm.Sによりスタック上に構築され、
+// trap()に渡されるトラップフレームのレイアウト
 struct trapframe {
-  // registers as pushed by pusha
+  // pushaによりプッシュされるレジスタ
   uint edi;
   uint esi;
   uint ebp;
-  uint oesp;      // useless & ignored
+  uint oesp;      // 役立たずで無視される
   uint ebx;
   uint edx;
   uint ecx;
   uint eax;
 
-  // rest of trap frame
+  // トラップフレームのその他の部分
   ushort gs;
   ushort padding1;
   ushort fs;
@@ -169,14 +169,14 @@ struct trapframe {
   ushort padding4;
   uint trapno;
 
-  // below here defined by x86 hardware
+  // これより下はx86ハードウェアにより定義されている
   uint err;
   uint eip;
   ushort cs;
   ushort padding5;
   uint eflags;
 
-  // below here only when crossing rings, such as from user to kernel
+  // これより下はユーザからカーネルへ、など空間をまたぐ時のみ
   uint esp;
   ushort ss;
   ushort padding6;
