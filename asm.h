@@ -15,7 +15,7 @@
 
 #define STA_X     0x8       // 実行可能セグメント
 #define STA_E     0x4       // 拡大縮小（非実行可能セグメント）
-#define STA_C     0x4       // 今フォーミングコードセグメント（実行可能のみ）
+#define STA_C     0x4       // コンフォーミングコードセグメント（実行可能のみ）
 #define STA_W     0x2       // 書き込み可能（非実行可能セグメント）
 #define STA_R     0x2       // 読み取り可能（実行可能セグメント）
-#define STA_A     0x1       // アクセス済み
+#define STA_A     0x1       // アクセス
