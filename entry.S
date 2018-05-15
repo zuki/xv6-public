@@ -1,13 +1,13 @@
-# The xv6 kernel starts executing in this file. This file is linked with
-# the kernel C code, so it can refer to kernel symbols such as main().
-# The boot block (bootasm.S and bootmain.c) jumps to entry below.
-        
-# Multiboot header, for multiboot boot loaders like GNU Grub.
+# xv6のカーネルはこのファイルから実行を開始する。このファイルはカーネルの
+# Cコードにリンクされているので、main()などのカーネルシンボルを参照できる。
+# ブートブロック(bootasm.Sとbootmain.c)は以下のentryにジャンプする。
+
+# マルチブートヘッダ。GUN Grubなどのマルチブート・ブートローダ用。
 # http://www.gnu.org/software/grub/manual/multiboot/multiboot.html
 #
-# Using GRUB 2, you can boot xv6 from a file stored in a
-# Linux file system by copying kernel or kernelmemfs to /boot
-# and then adding this menu entry:
+# GRUB 2を使って、Linuxファイルシステムに格納したファイルからxv6を
+# ブートできる。kernelまたはkernelmemfsを/bootにコピーし、
+# 以下をメニューエントリに追加する。
 #
 # menuentry "xv6" {
 # 	insmod ext2
@@ -23,7 +23,7 @@
 #include "mmu.h"
 #include "param.h"
 
-# Multiboot header.  Data to direct multiboot loader.
+# マルチブートヘッダ。マルチブートローダへ向けるためのデータ。
 .p2align 2
 .text
 .globl multiboot_header
@@ -34,34 +34,34 @@ multiboot_header:
   .long flags
   .long (-magic-flags)
 
-# By convention, the _start symbol specifies the ELF entry point.
-# Since we haven't set up virtual memory yet, our entry point is
-# the physical address of 'entry'.
+# 規約により、_startシンボルはELFエントリポイントを指定する。
+# まだ仮想メモリを設定していないので、エントリポイントは
+# 'entry'の物理アドレスである。
 .globl _start
 _start = V2P_WO(entry)
 
-# Entering xv6 on boot processor, with paging off.
+# ページンはオフで、ブートプロセッサ上のxv6に入る
 .globl entry
 entry:
-  # Turn on page size extension for 4Mbyte pages
+  # ページ単位が4MBになるようにページサイズ拡張をセットする
   movl    %cr4, %eax
   orl     $(CR4_PSE), %eax
   movl    %eax, %cr4
-  # Set page directory
+  # ページディレクトリをセットする
   movl    $(V2P_WO(entrypgdir)), %eax
   movl    %eax, %cr3
-  # Turn on paging.
+  # ページングを有効にする
   movl    %cr0, %eax
   orl     $(CR0_PG|CR0_WP), %eax
   movl    %eax, %cr0
 
-  # Set up the stack pointer.
+  # スタックポインタを設定する
   movl $(stack + KSTACKSIZE), %esp
 
-  # Jump to main(), and switch to executing at
-  # high addresses. The indirect call is needed because
-  # the assembler produces a PC-relative instruction
-  # for a direct jump.
+  # main()にジャンプして、高位アドレスの実行コードにスイッチする。
+  # ここでは間接呼び出しが必要である。
+  # なぜなら、直接ジャンブをすると
+  # アセンブラはPC相対の命令を生成するからである。
   mov $main, %eax
   jmp *%eax
 
