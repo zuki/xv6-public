@@ -1,10 +1,10 @@
-// Format of an ELF executable file
+// ELF実行ファイルのフォーマット
 
-#define ELF_MAGIC 0x464C457FU  // "\x7FELF" in little endian
+#define ELF_MAGIC 0x464C457FU  // リトルエンディアンで"\x7FELF"
 
-// File header
+// ファイルヘッダ
 struct elfhdr {
-  uint magic;  // must equal ELF_MAGIC
+  uint magic;  // ELF_MAGICに等しくなければならない
   uchar elf[12];
   ushort type;
   ushort machine;
@@ -21,7 +21,7 @@ struct elfhdr {
   ushort shstrndx;
 };
 
-// Program section header
+// プログラムセクションヘッダ
 struct proghdr {
   uint type;
   uint off;
@@ -33,10 +33,10 @@ struct proghdr {
   uint align;
 };
 
-// Values for Proghdr type
+// プログラムヘッダのtype値
 #define ELF_PROG_LOAD           1
 
-// Flag bits for Proghdr flags
+// プログラムヘッダのflags値のフラグビット
 #define ELF_PROG_FLAG_EXEC      1
 #define ELF_PROG_FLAG_WRITE     2
 #define ELF_PROG_FLAG_READ      4
