@@ -7,20 +7,21 @@
 #include "proc.h"
 #include "elf.h"
 
-extern char data[];  // defined by kernel.ld
-pde_t *kpgdir;  // for use in scheduler()
+extern char data[];  // kernel.ldで定義される
+pde_t *kpgdir;  // scheduler()で使用される
 
-// Set up CPU's kernel segment descriptors.
-// Run once on entry on each CPU.
+// CPUのカーネルセグメントディスクリプタを設定する。
+// 各CPU上のエントリごとに1回実行する。
 void
 seginit(void)
 {
   struct cpu *c;
 
-  // Map "logical" addresses to virtual addresses using identity map.
-  // Cannot share a CODE descriptor for both kernel and user
-  // because it would have to have DPL_USR, but the CPU forbids
-  // an interrupt from CPL=0 to DPL=3.
+  // 恒等マッピングを使用して「論理」アドレスから仮想アドレスにマップする。
+  // カーネル用とユーザ用のコードディスクリプタを共用することはできない。
+  // なぜなら、共有する場合は、DPL_USRをもつことになるが、CPUはCPL=0から
+  // DPL=3への割り込みを禁止しているからである。
+
   c = &cpus[cpuid()];
   c->gdt[SEG_KCODE] = SEG(STA_X|STA_R, 0, 0xffffffff, 0);
   c->gdt[SEG_KDATA] = SEG(STA_W, 0, 0xffffffff, 0);
@@ -29,9 +30,9 @@ seginit(void)
   lgdt(c->gdt, sizeof(c->gdt));
 }
 
-// Return the address of the PTE in page table pgdir
-// that corresponds to virtual address va.  If alloc!=0,
-// create any required page table pages.
+// ページテーブルpgdir内の、仮想アドレスvaに対応するPTEのアドレスを返す。
+// alloc!=0 の場合は、
+// 必要なページテーブルページを作成する。
 static pte_t *
 walkpgdir(pde_t *pgdir, const void *va, int alloc)
 {
@@ -42,21 +43,21 @@ walkpgdir(pde_t *pgdir, const void *va, int alloc)
   if(*pde & PTE_P){
     pgtab = (pte_t*)P2V(PTE_ADDR(*pde));
   } else {
-    if(!alloc || (pgtab = (pte_t*)kalloc()) == 0)
+    if(!alloc || (pgtab = (pte_t*)kalloc()) == 0)  // 割当不要または割当失敗の場合は0を返す
       return 0;
-    // Make sure all those PTE_P bits are zero.
+    // これらすべてのPTE_Pが0になるようにする
     memset(pgtab, 0, PGSIZE);
-    // The permissions here are overly generous, but they can
-    // be further restricted by the permissions in the page table
-    // entries, if necessary.
+    // ここでのパーミッションは通常上書きされるが、
+    // 必要であれば、ページテーブルエントリのパーミションでさらに制限する
+    // こともできる。
     *pde = V2P(pgtab) | PTE_P | PTE_W | PTE_U;
   }
   return &pgtab[PTX(va)];
 }
 
-// Create PTEs for virtual addresses starting at va that refer to
-// physical addresses starting at pa. va and size might not
-// be page-aligned.
+// vaで始まる仮想アドレスのためのPTE（ページテーブルエントリ）を作成する。
+// これはpaから始まる物理アドレスを参照する。
+// vaとサイズはページ境界にない可能性がある。成功した場合は0を返す。
 static int
 mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm)
 {
@@ -79,51 +80,51 @@ mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm)
   return 0;
 }
 
-// There is one page table per process, plus one that's used when
-// a CPU is not running any process (kpgdir). The kernel uses the
-// current process's page table during system calls and interrupts;
-// page protection bits prevent user code from using the kernel's
-// mappings.
+// プロセスごとに1つページテーブルがあり、さらに1つ、CPUがプロセスを1つも実行していない時に
+// 使用されるページテーブルがある(kpgdir)。カーネルはシステムコールと割り込み処理の間、
+// カレントプロセスのページテーブルを使用する。
+// ページ保護ビットはユーザコードがカーネルマッピングを使用することを
+// 防止する。
 //
-// setupkvm() and exec() set up every page table like this:
+// setupkvm() と exec() は次のように各ページテーブルを設定する:
 //
-//   0..KERNBASE: user memory (text+data+stack+heap), mapped to
-//                phys memory allocated by the kernel
-//   KERNBASE..KERNBASE+EXTMEM: mapped to 0..EXTMEM (for I/O space)
-//   KERNBASE+EXTMEM..data: mapped to EXTMEM..V2P(data)
-//                for the kernel's instructions and r/o data
-//   data..KERNBASE+PHYSTOP: mapped to V2P(data)..PHYSTOP,
-//                                  rw data + free physical memory
-//   0xfe000000..0: mapped direct (devices such as ioapic)
+//   0..KERNBASE: ユーザメモリ (text+data+stack+heap),
+//                カーネルにより割り当てられた物理メモリにマップされる
+//   KERNBASE..KERNBASE+EXTMEM: 0..EXTMEM にマップされる(I/O 空間用)
+//   KERNBASE+EXTMEM..data: EXTMEM..V2P(data)にマップされる
+//                カーネルの命令コード読み込み専用データ用
+//   data..KERNBASE+PHYSTOP: V2P(data)..PHYSTOPにマップされる
+//                読み書きデータとフリー物理メモリ
+//   0xfe000000..0: 直接マップされる（ioapicなどのデバイス）
 //
-// The kernel allocates physical memory for its heap and for user memory
-// between V2P(end) and the end of physical memory (PHYSTOP)
-// (directly addressable from end..P2V(PHYSTOP)).
+// カーネルは自身のヒープとユーザメモリ用に物理メモリをV2P(end)と物理メモリの終わり(PHYSTOP)の
+// 間に割り当てる。
+// （end..P2V(PHYSTOP)は直接アドレス可能）
 
-// This table defines the kernel's mappings, which are present in
-// every process's page table.
+// このテーブルはカーネルのマッピングを定義する。これは全プロセスの
+// ページテーブルに現れる
 static struct kmap {
   void *virt;
   uint phys_start;
   uint phys_end;
   int perm;
 } kmap[] = {
- { (void*)KERNBASE, 0,             EXTMEM,    PTE_W}, // I/O space
- { (void*)KERNLINK, V2P(KERNLINK), V2P(data), 0},     // kern text+rodata
- { (void*)data,     V2P(data),     PHYSTOP,   PTE_W}, // kern data+memory
- { (void*)DEVSPACE, DEVSPACE,      0,         PTE_W}, // more devices
+ { (void*)KERNBASE, 0,             EXTMEM,    PTE_W}, // I/O空間
+ { (void*)KERNLINK, V2P(KERNLINK), V2P(data), 0},     // カーネルのtext+rodata
+ { (void*)data,     V2P(data),     PHYSTOP,   PTE_W}, // カーネルのdata+memory
+ { (void*)DEVSPACE, DEVSPACE,      0,         PTE_W}, // デバイス
 };
 
-// Set up kernel part of a page table.
+// ページテーブルのカーネル部分を設定する
 pde_t*
 setupkvm(void)
 {
   pde_t *pgdir;
   struct kmap *k;
 
-  if((pgdir = (pde_t*)kalloc()) == 0)
+  if((pgdir = (pde_t*)kalloc()) == 0)    // ページテーブルの割当
     return 0;
-  memset(pgdir, 0, PGSIZE);
+  memset(pgdir, 0, PGSIZE);              // ページテーブルを0詰め
   if (P2V(PHYSTOP) > (void*)DEVSPACE)
     panic("PHYSTOP too high");
   for(k = kmap; k < &kmap[NELEM(kmap)]; k++)
@@ -135,8 +136,8 @@ setupkvm(void)
   return pgdir;
 }
 
-// Allocate one page table for the machine for the kernel address
-// space for scheduler processes.
+// スケジューラプロセス用にカーネルアドレス空間用の
+// ページテーブルを1つマシンに割り当てる
 void
 kvmalloc(void)
 {
@@ -144,15 +145,15 @@ kvmalloc(void)
   switchkvm();
 }
 
-// Switch h/w page table register to the kernel-only page table,
-// for when no process is running.
+// 実行中のプロセスがない場合に備えて、
+// ハードウェアページテーブルレジスタをカーネル専用のページテーブルに切り替える
 void
 switchkvm(void)
 {
-  lcr3(V2P(kpgdir));   // switch to the kernel page table
+  lcr3(V2P(kpgdir));   // カーネルページテーブルに切り替える
 }
 
-// Switch TSS and h/w page table to correspond to process p.
+// TSSとハードウェアページテーブルをプロセスpのものに切り替える
 void
 switchuvm(struct proc *p)
 {
@@ -169,16 +170,16 @@ switchuvm(struct proc *p)
   mycpu()->gdt[SEG_TSS].s = 0;
   mycpu()->ts.ss0 = SEG_KDATA << 3;
   mycpu()->ts.esp0 = (uint)p->kstack + KSTACKSIZE;
-  // setting IOPL=0 in eflags *and* iomb beyond the tss segment limit
-  // forbids I/O instructions (e.g., inb and outb) from user space
+  // elangsにIOPL=0を設定し、*かつ*、tssセグメントのリミット値を超える値を
+  // iombに設定するとユーザ空間からのI/O命令（inbやoutb）を禁止する。
   mycpu()->ts.iomb = (ushort) 0xFFFF;
   ltr(SEG_TSS << 3);
-  lcr3(V2P(p->pgdir));  // switch to process's address space
+  lcr3(V2P(p->pgdir));  // プロセスのアドレス空間に切り替える
   popcli();
 }
 
-// Load the initcode into address 0 of pgdir.
-// sz must be less than a page.
+// initcodeをpgdirのアドレス0にロードする。
+// sz は1ページ未満でなければならない。
 void
 inituvm(pde_t *pgdir, char *init, uint sz)
 {
@@ -186,14 +187,14 @@ inituvm(pde_t *pgdir, char *init, uint sz)
 
   if(sz >= PGSIZE)
     panic("inituvm: more than a page");
-  mem = kalloc();
+  mem = kalloc();  // 4096byte = 1 pageを割り当て
   memset(mem, 0, PGSIZE);
   mappages(pgdir, 0, PGSIZE, V2P(mem), PTE_W|PTE_U);
   memmove(mem, init, sz);
 }
 
-// Load a program segment into pgdir.  addr must be page-aligned
-// and the pages from addr to addr+sz must already be mapped.
+// プログラムセグメントをpgdirにロードする。addrはページ境界になければならない。
+// また、addrからaddr+szのページはすでにマップされていなければならない。
 int
 loaduvm(pde_t *pgdir, char *addr, struct inode *ip, uint offset, uint sz)
 {
@@ -216,8 +217,8 @@ loaduvm(pde_t *pgdir, char *addr, struct inode *ip, uint offset, uint sz)
   return 0;
 }
 
-// Allocate page tables and physical memory to grow process from oldsz to
-// newsz, which need not be page aligned.  Returns new size or 0 on error.
+// プロセスをoldszからnewszに拡張するためにページテーブルと物理メモリを割り当てる
+// サイズはページ境界になくても良い。新しいサイズ、またはエラーの場合は0を返す
 int
 allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
 {
@@ -248,10 +249,10 @@ allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
   return newsz;
 }
 
-// Deallocate user pages to bring the process size from oldsz to
-// newsz.  oldsz and newsz need not be page-aligned, nor does newsz
-// need to be less than oldsz.  oldsz can be larger than the actual
-// process size.  Returns the new process size.
+// プロセスサイズをoldszからnewszにするためにユーザページの割り当てを解除する
+// oldszとnewszはページ境界になくても良い。また、newszはoldszより小さくなくても良い
+// oldszは実際のプロセスサイズより大きくても良い
+// 新しいプロセスサイズを返す
 int
 deallocuvm(pde_t *pgdir, uint oldsz, uint newsz)
 {
@@ -278,8 +279,8 @@ deallocuvm(pde_t *pgdir, uint oldsz, uint newsz)
   return newsz;
 }
 
-// Free a page table and all the physical memory pages
-// in the user part.
+// ユーザ部分のページテーブルとすべての物理メモリを
+// 解放する。
 void
 freevm(pde_t *pgdir)
 {
@@ -297,8 +298,8 @@ freevm(pde_t *pgdir)
   kfree((char*)pgdir);
 }
 
-// Clear PTE_U on a page. Used to create an inaccessible
-// page beneath the user stack.
+// ページのPTE_Uをクリアする。ユーザスタック直下に
+// アクセス不能なページを作成するのに使用する
 void
 clearpteu(pde_t *pgdir, char *uva)
 {
@@ -310,8 +311,8 @@ clearpteu(pde_t *pgdir, char *uva)
   *pte &= ~PTE_U;
 }
 
-// Given a parent process's page table, create a copy
-// of it for a child.
+// 親プロセスのページテーブルを与えると、子プロセス用に
+// それのコピーを作成する。
 pde_t*
 copyuvm(pde_t *pgdir, uint sz)
 {
@@ -343,7 +344,7 @@ bad:
 }
 
 //PAGEBREAK!
-// Map user virtual address to kernel address.
+// ユーザ仮想アドレスをカーネルアドレスにマップする。
 char*
 uva2ka(pde_t *pgdir, char *uva)
 {
@@ -357,9 +358,9 @@ uva2ka(pde_t *pgdir, char *uva)
   return (char*)P2V(PTE_ADDR(*pte));
 }
 
-// Copy len bytes from p to user address va in page table pgdir.
-// Most useful when pgdir is not the current page table.
-// uva2ka ensures this only works for PTE_U pages.
+// pからページテーブル pgdirのユーザアドレス va へ lenバイトコピーする
+// pgdirがカレントページテーブルでない場合に最も有効
+// uva2ka はPTF_Uページでのみ処理さることこを保証する
 int
 copyout(pde_t *pgdir, uint va, void *p, uint len)
 {
@@ -389,4 +390,3 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
 // Blank page.
 //PAGEBREAK!
 // Blank page.
-
