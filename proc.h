@@ -1,29 +1,29 @@
-// Per-CPU state
+// CPU毎のステート
 struct cpu {
-  uchar apicid;                // Local APIC ID
-  struct context *scheduler;   // swtch() here to enter scheduler
-  struct taskstate ts;         // Used by x86 to find stack for interrupt
-  struct segdesc gdt[NSEGS];   // x86 global descriptor table
-  volatile uint started;       // Has the CPU started?
-  int ncli;                    // Depth of pushcli nesting.
-  int intena;                  // Were interrupts enabled before pushcli?
-  struct proc *proc;           // The process running on this cpu or null
+  uchar apicid;                // ローカルAPIC ID
+  struct context *scheduler;   // スケジューラに入るにはここにswtch()
+  struct taskstate ts;         // 割り込み用のスタックを探すためにx86が使用
+  struct segdesc gdt[NSEGS];   // x86グローバルディスクリプタテーブル
+  volatile uint started;       // CPUは開始しているか?
+  int ncli;                    // pushcliネストの深さ
+  int intena;                  // pushcliの前に割り込みは有効だったか?
+  struct proc *proc;           // このCPUで実行中のプロセス。なければnull
 };
 
 extern struct cpu cpus[NCPU];
 extern int ncpu;
 
 //PAGEBREAK: 17
-// Saved registers for kernel context switches.
-// Don't need to save all the segment registers (%cs, etc),
-// because they are constant across kernel contexts.
-// Don't need to save %eax, %ecx, %edx, because the
-// x86 convention is that the caller has saved them.
-// Contexts are stored at the bottom of the stack they
-// describe; the stack pointer is the address of the context.
-// The layout of the context matches the layout of the stack in swtch.S
-// at the "Switch stacks" comment. Switch doesn't save eip explicitly,
-// but it is on the stack and allocproc() manipulates it.
+// カーネルコンテキストスイッチで保存されるレジスタ
+// すべてのセグメントレジスタ（%csなど）はカーネルコンテキストを
+// 通じて不変であるため保存する必要はない。
+// %eax, %ecx, %edxは、x86の慣習で呼び出し元が保存するので、
+// 保存する必要はない。
+// コンテキストは自身が記述するスタックの底に格納される。
+// すなわち、スタックポインタはコンテキストのアドレスである。
+// コンテキストのレイアウトは、switch.Sのコメント"スタックを切り替える"に
+// 書かれているスタックのレイアウトに一致する。スイッチはeipを明示的には
+// 保存しないが、スタック上にあり、allocproc()がそれを処理する。
 struct context {
   uint edi;
   uint esi;
@@ -34,25 +34,25 @@ struct context {
 
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
-// Per-process state
+// プロセスごとのステート
 struct proc {
-  uint sz;                     // Size of process memory (bytes)
-  pde_t* pgdir;                // Page table
-  char *kstack;                // Bottom of kernel stack for this process
-  enum procstate state;        // Process state
-  int pid;                     // Process ID
-  struct proc *parent;         // Parent process
-  struct trapframe *tf;        // Trap frame for current syscall
-  struct context *context;     // swtch() here to run process
-  void *chan;                  // If non-zero, sleeping on chan
-  int killed;                  // If non-zero, have been killed
-  struct file *ofile[NOFILE];  // Open files
-  struct inode *cwd;           // Current directory
-  char name[16];               // Process name (debugging)
+  uint sz;                     // プロセスメモリのサイズ（単位はバイト）
+  pde_t* pgdir;                // ページテーブル
+  char *kstack;                // このプロセスのカーネルスタックの底
+  enum procstate state;        // プロセスの状態
+  int pid;                     // プロセスID
+  struct proc *parent;         // 親プロセス
+  struct trapframe *tf;        // 現在のsyscallのトラップフレーム
+  struct context *context;     // プロセスの実行するためにここにswtch()
+  void *chan;                  // 非ゼロの場合、chanでスリープ中
+  int killed;                  // 非ゼロの場合、キルされた
+  struct file *ofile[NOFILE];  // オープンしたファイル
+  struct inode *cwd;           // カレントディレクトリ
+  char name[16];               // プロセス名（デバッグ用）
 };
 
-// Process memory is laid out contiguously, low addresses first:
-//   text
-//   original data and bss
-//   fixed-size stack
-//   expandable heap
+// プロセスメモリは、低位アドレスから次のように、連続的に配置される。
+//   テキスト
+//   オリジナルのデータとbss
+//   固定サイズのスタック
+//   拡張可能なヒープ
