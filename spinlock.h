@@ -1,4 +1,4 @@
-// 相互排除ロック
+// 相互排他ロック
 struct spinlock {
   uint locked;       // このロックは獲得済みか?
 
