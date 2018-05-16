@@ -1,6 +1,6 @@
-// Physical memory allocator, intended to allocate
-// memory for user processes, kernel stacks, page table pages,
-// and pipe buffers. Allocates 4096-byte pages.
+// 物理メモリアロケータ。ユーザプロセス、カーネルスタック、
+// ページテーブルのページ、パイプバッファのためのメモリの割り当てを行う
+// 4096バイトのページを割り当てる
 
 #include "types.h"
 #include "defs.h"
@@ -10,8 +10,8 @@
 #include "spinlock.h"
 
 void freerange(void *vstart, void *vend);
-extern char end[]; // first address after kernel loaded from ELF file
-                   // defined by the kernel linker script in kernel.ld
+extern char end[]; // カーネルがELFファイルからロードされた後の最初のアドレス
+                   // kernel.ldにあるカーネルリンカスクリプトで定義されている
 
 struct run {
   struct run *next;
@@ -23,11 +23,11 @@ struct {
   struct run *freelist;
 } kmem;
 
-// Initialization happens in two phases.
-// 1. main() calls kinit1() while still using entrypgdir to place just
-// the pages mapped by entrypgdir on free list.
-// 2. main() calls kinit2() with the rest of the physical pages
-// after installing a full page table that maps them on all cores.
+// 初期化は2つのフェーズで行われる
+// 1. main()は、まだentrypgdirを使用している間にentrypgdirでマップされる
+// ページを空きリストに置くだけの目的で、kinit1を呼び出す
+// 2. main()はすべてのコア上のページをマップする完全なページテーブルを
+// インストールした後、残りの物理ページを指定してkinit2()を呼び出す
 void
 kinit1(void *vstart, void *vend)
 {
@@ -52,10 +52,10 @@ freerange(void *vstart, void *vend)
     kfree(p);
 }
 //PAGEBREAK: 21
-// Free the page of physical memory pointed at by v,
-// which normally should have been returned by a
-// call to kalloc().  (The exception is when
-// initializing the allocator; see kinit above.)
+// vで指し示される物理メモリのページを解放する。
+// vは通常、kalloc()の呼び出しにより返されるポインタである。
+// （例外は、アロケータを初期化する場合である。
+// 上のkinitを参照）
 void
 kfree(char *v)
 {
@@ -64,7 +64,7 @@ kfree(char *v)
   if((uint)v % PGSIZE || v < end || V2P(v) >= PHYSTOP)
     panic("kfree");
 
-  // Fill with junk to catch dangling refs.
+  // ダングリング参照をキャッチするためにジャンクで満たす
   memset(v, 1, PGSIZE);
 
   if(kmem.use_lock)
@@ -76,9 +76,9 @@ kfree(char *v)
     release(&kmem.lock);
 }
 
-// Allocate one 4096-byte page of physical memory.
-// Returns a pointer that the kernel can use.
-// Returns 0 if the memory cannot be allocated.
+// 物理メモリの4096バイトのページを1つ割り当てる。
+// カーネルが利用可能なポインタを返す。
+// メモリを割り当てられなかった時は、0を返す。
 char*
 kalloc(void)
 {
@@ -93,4 +93,3 @@ kalloc(void)
     release(&kmem.lock);
   return (char*)r;
 }
-
