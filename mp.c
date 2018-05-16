@@ -1,5 +1,5 @@
-// Multiprocessor support
-// Search memory for MP description structures.
+// マルチプロセッササポート
+// MP記述構造体をメモリ上で探索する。
 // http://developer.intel.com/design/pentium/datashts/24201606.pdf
 
 #include "types.h"
@@ -26,7 +26,7 @@ sum(uchar *addr, int len)
   return sum;
 }
 
-// Look for an MP structure in the len bytes at addr.
+// addrからlenバイト内でMP構造体を探索する。
 static struct mp*
 mpsearch1(uint a, int len)
 {
@@ -40,11 +40,11 @@ mpsearch1(uint a, int len)
   return 0;
 }
 
-// Search for the MP Floating Pointer Structure, which according to the
-// spec is in one of the following three locations:
-// 1) in the first KB of the EBDA;
-// 2) in the last KB of system base memory;
-// 3) in the BIOS ROM between 0xE0000 and 0xFFFFF.
+// MP浮動ポインタ構造体を探索する。
+// 仕様書によれば次の3箇所のいずれかにある。
+// 1) EBDAの最初のKB内;
+// 2) システムベースメモリの最後のKB内;
+// 3) BIOS ROMの0xE0000から0xFFFFFの間。
 static struct mp*
 mpsearch(void)
 {
@@ -64,11 +64,11 @@ mpsearch(void)
   return mpsearch1(0xF0000, 0x10000);
 }
 
-// Search for an MP configuration table.  For now,
-// don't accept the default configurations (physaddr == 0).
-// Check for correct signature, calculate the checksum and,
-// if correct, check the version.
-// To do: check extended table checksum.
+// MP構成テーブルを探索する。さしあたり、デフォルトの
+// 構成（physaddr == 0）は受け付けない。
+// 署名が正しいかチェックし、チェックサムを計算する。
+// 正しければ、バージョンをチェックする。
+// TODO: 拡張テーブルチェックサムをチェックする。
 static struct mpconf*
 mpconfig(struct mp **pmp)
 {
@@ -107,7 +107,7 @@ mpinit(void)
     case MPPROC:
       proc = (struct mpproc*)p;
       if(ncpu < NCPU) {
-        cpus[ncpu].apicid = proc->apicid;  // apicid may differ from ncpu
+        cpus[ncpu].apicid = proc->apicid;  // apicid はncpuとは異なる可能性あり
         ncpu++;
       }
       p += sizeof(struct mpproc);
@@ -131,9 +131,9 @@ mpinit(void)
     panic("Didn't find a suitable machine");
 
   if(mp->imcrp){
-    // Bochs doesn't support IMCR, so this doesn't run on Bochs.
-    // But it would on real hardware.
-    outb(0x22, 0x70);   // Select IMCR
-    outb(0x23, inb(0x23) | 1);  // Mask external interrupts.
+    // BochsはIMCRをサポートしていない。そのため、Bochs上では動かない。
+    // しかし、実際のマシン上では動くはず。
+    outb(0x22, 0x70);   // IMCRを選択
+    outb(0x23, inb(0x23) | 1);  // 外部割り込みをマスクする
   }
 }
