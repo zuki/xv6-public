@@ -1,5 +1,5 @@
-// The local APIC manages internal (non-I/O) interrupts.
-// See Chapter 8 & Appendix C of Intel processor manual volume 3.
+// ローカルAPICは内部（非I/O）割り込みを管理する。
+// Intelプロセッサマニュアル第3巻の8章と付録Cを参照のこと。
 
 #include "param.h"
 #include "types.h"
@@ -10,45 +10,45 @@
 #include "mmu.h"
 #include "x86.h"
 
-// Local APIC registers, divided by 4 for use as uint[] indices.
+// ローカルAPICレジスタ、unit[]のインデックスとして使うために4で割っている。
 #define ID      (0x0020/4)   // ID
-#define VER     (0x0030/4)   // Version
-#define TPR     (0x0080/4)   // Task Priority
+#define VER     (0x0030/4)   // バージョン
+#define TPR     (0x0080/4)   // タスク優先度
 #define EOI     (0x00B0/4)   // EOI
-#define SVR     (0x00F0/4)   // Spurious Interrupt Vector
-  #define ENABLE     0x00000100   // Unit Enable
-#define ESR     (0x0280/4)   // Error Status
-#define ICRLO   (0x0300/4)   // Interrupt Command
+#define SVR     (0x00F0/4)   // スプリアス割り込みベクタ
+  #define ENABLE     0x00000100   // ユニットイネーブル
+#define ESR     (0x0280/4)   // エラーステータス
+#define ICRLO   (0x0300/4)   // 割り込みコマンド
   #define INIT       0x00000500   // INIT/RESET
-  #define STARTUP    0x00000600   // Startup IPI
-  #define DELIVS     0x00001000   // Delivery status
-  #define ASSERT     0x00004000   // Assert interrupt (vs deassert)
+  #define STARTUP    0x00000600   // スタートアップIPI
+  #define DELIVS     0x00001000   // デリバリステータス
+  #define ASSERT     0x00004000   // アサート割り込み (vs deassert)
   #define DEASSERT   0x00000000
-  #define LEVEL      0x00008000   // Level triggered
-  #define BCAST      0x00080000   // Send to all APICs, including self.
+  #define LEVEL      0x00008000   // レベルトリガ
+  #define BCAST      0x00080000   // 自分を含め、すべてのAPICに送信
   #define BUSY       0x00001000
   #define FIXED      0x00000000
-#define ICRHI   (0x0310/4)   // Interrupt Command [63:32]
-#define TIMER   (0x0320/4)   // Local Vector Table 0 (TIMER)
-  #define X1         0x0000000B   // divide counts by 1
-  #define PERIODIC   0x00020000   // Periodic
-#define PCINT   (0x0340/4)   // Performance Counter LVT
-#define LINT0   (0x0350/4)   // Local Vector Table 1 (LINT0)
-#define LINT1   (0x0360/4)   // Local Vector Table 2 (LINT1)
-#define ERROR   (0x0370/4)   // Local Vector Table 3 (ERROR)
-  #define MASKED     0x00010000   // Interrupt masked
-#define TICR    (0x0380/4)   // Timer Initial Count
-#define TCCR    (0x0390/4)   // Timer Current Count
-#define TDCR    (0x03E0/4)   // Timer Divide Configuration
+#define ICRHI   (0x0310/4)   // 割り込みコマンド [63:32]
+#define TIMER   (0x0320/4)   // ローカルベクタテーブル 0 (TIMER)
+  #define X1         0x0000000B   // カウントを1で割る
+  #define PERIODIC   0x00020000   // 定期的
+#define PCINT   (0x0340/4)   // パフォーマンスカウンタLVT
+#define LINT0   (0x0350/4)   // ローカルベクタテーブル 1 (LINT0)
+#define LINT1   (0x0360/4)   // ローカルベクタテーブル 2 (LINT1)
+#define ERROR   (0x0370/4)   // ローカルベクタテーブル 3 (ERROR)
+  #define MASKED     0x00010000   // 割り込みマスク
+#define TICR    (0x0380/4)   // タイマー初期カウント
+#define TCCR    (0x0390/4)   // タイマーカレントカウント
+#define TDCR    (0x03E0/4)   // タイマー除算設定
 
-volatile uint *lapic;  // Initialized in mp.c
+volatile uint *lapic;  // mp.cで初期化される
 
 //PAGEBREAK!
 static void
 lapicw(int index, int value)
 {
   lapic[index] = value;
-  lapic[ID];  // wait for write to finish, by reading
+  lapic[ID];  // 読み込むことで、書き込みが終了するのを待機する
 }
 
 void
@@ -57,43 +57,43 @@ lapicinit(void)
   if(!lapic)
     return;
 
-  // Enable local APIC; set spurious interrupt vector.
+  // ローカルAPICを有効化; スプリアス割り込みベクタをセットする。
   lapicw(SVR, ENABLE | (T_IRQ0 + IRQ_SPURIOUS));
 
-  // The timer repeatedly counts down at bus frequency
-  // from lapic[TICR] and then issues an interrupt.
-  // If xv6 cared more about precise timekeeping,
-  // TICR would be calibrated using an external time source.
+  // タイマーはバス周波数でlapic[TICR]から繰り返しカウントダウンし、
+  // 割り込みを発生する。
+  // xv6がもっと正確な時間管理をしたとしたら、
+  // TICRは外部のタイムソースを使って補正されていただろう。
   lapicw(TDCR, X1);
   lapicw(TIMER, PERIODIC | (T_IRQ0 + IRQ_TIMER));
   lapicw(TICR, 10000000);
 
-  // Disable logical interrupt lines.
+  // 論理割り込みラインを無効化。
   lapicw(LINT0, MASKED);
   lapicw(LINT1, MASKED);
 
-  // Disable performance counter overflow interrupts
-  // on machines that provide that interrupt entry.
+  // パフォーマンスカウンタオーバーフロー割り込みエントリを提供して
+  // いるマシン上の当該笑い込みを無効化する。
   if(((lapic[VER]>>16) & 0xFF) >= 4)
     lapicw(PCINT, MASKED);
 
-  // Map error interrupt to IRQ_ERROR.
+  // エラー割り込みをIRQ_ERRORにマップする。
   lapicw(ERROR, T_IRQ0 + IRQ_ERROR);
 
-  // Clear error status register (requires back-to-back writes).
+  // エラーステータスレジスタをクリアする（連続書き込みが必要）
   lapicw(ESR, 0);
   lapicw(ESR, 0);
 
-  // Ack any outstanding interrupts.
+  // 未処理のすべての割り込みを付けつける。
   lapicw(EOI, 0);
 
-  // Send an Init Level De-Assert to synchronise arbitration ID's.
+  // Init/Level/De-Assertを送信して、arbitration IDを同期する。
   lapicw(ICRHI, 0);
   lapicw(ICRLO, BCAST | INIT | LEVEL);
   while(lapic[ICRLO] & DELIVS)
     ;
 
-  // Enable interrupts on the APIC (but not on the processor).
+  // APIC上（プロセッサ上ではない）で割り込みを有効化する。
   lapicw(TPR, 0);
 }
 
@@ -105,7 +105,7 @@ lapicid(void)
   return lapic[ID] >> 24;
 }
 
-// Acknowledge interrupt.
+// 割り込みを確認する。
 void
 lapiceoi(void)
 {
@@ -113,8 +113,8 @@ lapiceoi(void)
     lapicw(EOI, 0);
 }
 
-// Spin for a given number of microseconds.
-// On real hardware would want to tune this dynamically.
+// 指定されたマイクロ秒数だけスピンする。
+// 実際のハードウェアではこれを動的に調整したいだろう。
 void
 microdelay(int us)
 {
@@ -123,36 +123,36 @@ microdelay(int us)
 #define CMOS_PORT    0x70
 #define CMOS_RETURN  0x71
 
-// Start additional processor running entry code at addr.
-// See Appendix B of MultiProcessor Specification.
+// addrにあるエントリコードを追加プロセッサで実行開始する
+// マルチプロセッサ仕様の付録Bを参照
 void
 lapicstartap(uchar apicid, uint addr)
 {
   int i;
   ushort *wrv;
 
-  // "The BSP must initialize CMOS shutdown code to 0AH
-  // and the warm reset vector (DWORD based at 40:67) to point at
-  // the AP startup code prior to the [universal startup algorithm]."
-  outb(CMOS_PORT, 0xF);  // offset 0xF is shutdown code
+  // "BSPは、[汎用スタートアップアルゴリズム]の前に、CMOSシャットダウン
+  // コードを0AHに、warmリセットベクタ（40:67をベースとするDWORD）を
+  // APスタートアップにコードを指すように初期化しなければならない。
+  outb(CMOS_PORT, 0xF);  // オフセット0xFはシャットダウンコード
   outb(CMOS_PORT+1, 0x0A);
-  wrv = (ushort*)P2V((0x40<<4 | 0x67));  // Warm reset vector
+  wrv = (ushort*)P2V((0x40<<4 | 0x67));  // Warmリセットベクタ
   wrv[0] = 0;
   wrv[1] = addr >> 4;
 
-  // "Universal startup algorithm."
-  // Send INIT (level-triggered) interrupt to reset other CPU.
+  // "汎用スタートアップアルゴリズム"
+  // INIT (レベルトリガ)割り込みを送信して他のCPUをリセットする
   lapicw(ICRHI, apicid<<24);
   lapicw(ICRLO, INIT | LEVEL | ASSERT);
   microdelay(200);
   lapicw(ICRLO, INIT | LEVEL);
-  microdelay(100);    // should be 10ms, but too slow in Bochs!
+  microdelay(100);    // 10msでなければならないが、Bochsは遅すぎる!
 
-  // Send startup IPI (twice!) to enter code.
-  // Regular hardware is supposed to only accept a STARTUP
-  // when it is in the halted state due to an INIT.  So the second
-  // should be ignored, but it is part of the official Intel algorithm.
-  // Bochs complains about the second one.  Too bad for Bochs.
+  // スタートアップIPIを（2回!)送信してコードに入る。
+  // 一般的なハードウェアは、INITによる停止中にある場合、
+  // STARTUPしか受け付けないと思われる。そのため、2回目は無視されるはずで
+  // あるが、これが正式なIntelのアルゴリズムである。
+  // Bochsは2回めの送信について文句を言う。Bochsにとっては最悪だ。
   for(i = 0; i < 2; i++){
     lapicw(ICRHI, apicid<<24);
     lapicw(ICRLO, STARTUP | (addr>>12));
@@ -162,7 +162,7 @@ lapicstartap(uchar apicid, uint addr)
 
 #define CMOS_STATA   0x0a
 #define CMOS_STATB   0x0b
-#define CMOS_UIP    (1 << 7)        // RTC update in progress
+#define CMOS_UIP    (1 << 7)        // 進行中にRTCを更新
 
 #define SECS    0x00
 #define MINS    0x02
@@ -189,7 +189,7 @@ static void fill_rtcdate(struct rtcdate *r)
   r->year   = cmos_read(YEAR);
 }
 
-// qemu seems to use 24-hour GWT and the values are BCD encoded
+// qemuは24時GWTを使用し、その値はBCDエンコードされているようだ。
 void cmostime(struct rtcdate *r)
 {
   struct rtcdate t1, t2;
@@ -199,7 +199,7 @@ void cmostime(struct rtcdate *r)
 
   bcd = (sb & (1 << 2)) == 0;
 
-  // make sure CMOS doesn't modify time while we read it
+  // 読み込み中にCMOSが時間を変更しないようにする
   for(;;) {
     fill_rtcdate(&t1);
     if(cmos_read(CMOS_STATA) & CMOS_UIP)
@@ -209,7 +209,7 @@ void cmostime(struct rtcdate *r)
       break;
   }
 
-  // convert
+  // 変換する
   if(bcd) {
 #define    CONV(x)     (t1.x = ((t1.x >> 4) * 10) + (t1.x & 0xf))
     CONV(second);
