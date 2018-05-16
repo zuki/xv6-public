@@ -1,4 +1,4 @@
-// Mutual exclusion spin locks.
+// 相互排他スピンロック。
 
 #include "types.h"
 #include "defs.h"
@@ -17,32 +17,32 @@ initlock(struct spinlock *lk, char *name)
   lk->cpu = 0;
 }
 
-// Acquire the lock.
-// Loops (spins) until the lock is acquired.
-// Holding a lock for a long time may cause
-// other CPUs to waste time spinning to acquire it.
+// ロックを獲得する。
+// ロックが獲得されるまでループ（スピン）する。
+// ロックを長時間保持すると、他のCPUがロックを
+// 獲得するためのスピンに時間を浪費させる可能性がある。
 void
 acquire(struct spinlock *lk)
 {
-  pushcli(); // disable interrupts to avoid deadlock.
+  pushcli(); // ヘッドロックを避けるために割り込みを禁止する。
   if(holding(lk))
     panic("acquire");
 
-  // The xchg is atomic.
+  // xchgはアトミックである。
   while(xchg(&lk->locked, 1) != 0)
     ;
 
-  // Tell the C compiler and the processor to not move loads or stores
-  // past this point, to ensure that the critical section's memory
-  // references happen after the lock is acquired.
+  // クリティカルセクションのメモリ参照がロックの獲得後に行われるように、
+  // この点を超えるロード/ストアの移動をしないように
+  // Cコンパイラとプロセッサに指示する。（メモリバリア）
   __sync_synchronize();
 
-  // Record info about lock acquisition for debugging.
+  // デバッグ用にロック獲得に関する情報を記録する。
   lk->cpu = mycpu();
   getcallerpcs(&lk, lk->pcs);
 }
 
-// Release the lock.
+// ロックを解放する。
 void
 release(struct spinlock *lk)
 {
@@ -52,22 +52,22 @@ release(struct spinlock *lk)
   lk->pcs[0] = 0;
   lk->cpu = 0;
 
-  // Tell the C compiler and the processor to not move loads or stores
-  // past this point, to ensure that all the stores in the critical
-  // section are visible to other cores before the lock is released.
-  // Both the C compiler and the hardware may re-order loads and
-  // stores; __sync_synchronize() tells them both not to.
+  // クリティカルセクションのすべてのストアがロックが解放される前に、
+  // 他のコアから見られるようにするため（逆?）に、この点を超えるロード/ストアの移動を
+  // しないように、Cコンパイラとプロセッサに指示する。
+  // Cコンパイラとプロセッサは共にロードとストアを再配置する可能性がある。
+  // __sync_synchronize() は両者にそれをしないように指示する。
   __sync_synchronize();
 
-  // Release the lock, equivalent to lk->locked = 0.
-  // This code can't use a C assignment, since it might
-  // not be atomic. A real OS would use C atomics here.
+  // ロックの解放は、lk->locked = 0 に相当する。
+  // このコードにCの代入は使えない。Cの代入はアトミックで
+  // ないからである。実際のOSはCのアトミック関数をここに使うだろう。
   asm volatile("movl $0, %0" : "+m" (lk->locked) : );
 
   popcli();
 }
 
-// Record the current call stack in pcs[] by following the %ebp chain.
+// %ebpチェインをたどり、pcs[]に現在のコーススタックを記録する。
 void
 getcallerpcs(void *v, uint pcs[])
 {
@@ -78,14 +78,14 @@ getcallerpcs(void *v, uint pcs[])
   for(i = 0; i < 10; i++){
     if(ebp == 0 || ebp < (uint*)KERNBASE || ebp == (uint*)0xffffffff)
       break;
-    pcs[i] = ebp[1];     // saved %eip
-    ebp = (uint*)ebp[0]; // saved %ebp
+    pcs[i] = ebp[1];     // 保存されていた%eip
+    ebp = (uint*)ebp[0]; // 保存されていた%ebp
   }
   for(; i < 10; i++)
     pcs[i] = 0;
 }
 
-// Check whether this cpu is holding the lock.
+// このCPUがロックを保持しているかチェックする。
 int
 holding(struct spinlock *lock)
 {
@@ -93,9 +93,9 @@ holding(struct spinlock *lock)
 }
 
 
-// Pushcli/popcli are like cli/sti except that they are matched:
-// it takes two popcli to undo two pushcli.  Also, if interrupts
-// are off, then pushcli, popcli leaves them off.
+// Pushcli/popcliは両者が対等であることを除いて、cli/stiと同じである:
+// 2回のpushcliを取り消すには2回のpopcliが必要である。また、割り込みが
+// オフであれば、pushcliとpopcliは割り込みをオフのままにする。
 
 void
 pushcli(void)
@@ -119,4 +119,3 @@ popcli(void)
   if(mycpu()->ncli == 0 && mycpu()->intena)
     sti();
 }
-
