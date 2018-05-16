@@ -1,75 +1,75 @@
 #include "asm.h"
 #include "memlayout.h"
 #include "mmu.h"
-	
-# Each non-boot CPU ("AP") is started up in response to a STARTUP
-# IPI from the boot CPU.  Section B.4.2 of the Multi-Processor
-# Specification says that the AP will start in real mode with CS:IP
-# set to XY00:0000, where XY is an 8-bit value sent with the
-# STARTUP. Thus this code must start at a 4096-byte boundary.
-#
-# Because this code sets DS to zero, it must sit
-# at an address in the low 2^16 bytes.
-#
-# Startothers (in main.c) sends the STARTUPs one at a time.
-# It copies this code (start) at 0x7000.  It puts the address of
-# a newly allocated per-core stack in start-4,the address of the
-# place to jump to (mpenter) in start-8, and the physical address
-# of entrypgdir in start-12.
-#
-# This code combines elements of bootasm.S and entry.S.
 
-.code16           
+# 非ブートCPU（"AP"）はブートCPUのSTARTUP IPIに反応して開始される。
+# "Multi-Processor Specification"のB.4.2節によると、
+# APは、CS:IPにXY00:0000をセットしてリアルモードで開始される。
+# ここで、XYはSTARTUPで送信される8ビットの値である。
+# したがって、このコードは4096バイト境界から開始しなければならない。
+#
+# このコードはDSに0をセットするので、
+# 低位2^16(64K)バイトのアドレスにいなければならない。
+#
+# (main.cの）startothersは一度に1つSTARTUPを送信する。
+# startothersはこのコード(start)を0x7000にコピーし、
+# 新規にコアごとに割り当てられるスタックのアドレスを(start-4)に、
+# ジャンプ先のアドレス(mpenter)を(start-8)に、
+# entrypgdirの物理アドレスを(start-12)に置く。
+#
+# このコードはbootasm.Sとentry.Sの要素を結合する
+
+.code16
 .globl start
 start:
-  cli            
+  cli
 
-  # Zero data segment registers DS, ES, and SS.
+  # データセグメントレジスタDS, ES, SSを0クリアする。
   xorw    %ax,%ax
   movw    %ax,%ds
   movw    %ax,%es
   movw    %ax,%ss
 
-  # Switch from real to protected mode.  Use a bootstrap GDT that makes
-  # virtual addresses map directly to physical addresses so that the
-  # effective memory map doesn't change during the transition.
+  # リアルモードからプロテクトモードに切り替える。切り替えの際に
+  # 実効メモリマップが変わらないように、仮想アドレスを
+  # 直接物理アドレスにマップするブートストラップGDTを使用する。e
   lgdt    gdtdesc
   movl    %cr0, %eax
   orl     $CR0_PE, %eax
   movl    %eax, %cr0
 
-  # Complete the transition to 32-bit protected mode by using a long jmp
-  # to reload %cs and %eip.  The segment descriptors are set up with no
-  # translation, so that the mapping is still the identity mapping.
+  # ロングジャンプして%csと%eipを再ロードし、32ビットプロテクト
+  # モードへの移行を完了させる。セグメントディスクリプタは移行しないので
+  # マッピングは依然として恒等マッピングである。
   ljmpl    $(SEG_KCODE<<3), $(start32)
 
 //PAGEBREAK!
-.code32  # Tell assembler to generate 32-bit code now.
+.code32  # ここからは32ビットコードを生成するようアセンブラに伝える
 start32:
-  # Set up the protected-mode data segment registers
-  movw    $(SEG_KDATA<<3), %ax    # Our data segment selector
-  movw    %ax, %ds                # -> DS: Data Segment
-  movw    %ax, %es                # -> ES: Extra Segment
-  movw    %ax, %ss                # -> SS: Stack Segment
-  movw    $0, %ax                 # Zero segments not ready for use
+  # プロテクトモードのデータセグメントレジスタを設定する
+  movw    $(SEG_KDATA<<3), %ax    # データセグメントセレクタ(0x10)
+  movw    %ax, %ds                # -> DS: データセグメント
+  movw    %ax, %es                # -> ES: エクストラセグメント
+  movw    %ax, %ss                # -> SS: スタックセグメント
+  movw    $0, %ax                 # 未使用のセグメントには0をセット
   movw    %ax, %fs                # -> FS
   movw    %ax, %gs                # -> GS
 
-  # Turn on page size extension for 4Mbyte pages
+  # ページ単位が4MBになるようにページサイズ拡張をセットする
   movl    %cr4, %eax
   orl     $(CR4_PSE), %eax
   movl    %eax, %cr4
-  # Use entrypgdir as our initial page table
+  # 最初のページテーブルとしてentrypgdirを使用する
   movl    (start-12), %eax
   movl    %eax, %cr3
-  # Turn on paging.
+  # ページングを有効にする
   movl    %cr0, %eax
   orl     $(CR0_PE|CR0_PG|CR0_WP), %eax
   movl    %eax, %cr0
 
-  # Switch to the stack allocated by startothers()
+  # startothers()により割り当てられたスタックに切り替える
   movl    (start-4), %esp
-  # Call mpenter()
+  # mpenter()を呼び出す
   call	 *(start-8)
 
   movw    $0x8a00, %ax
@@ -90,4 +90,3 @@ gdt:
 gdtdesc:
   .word   (gdtdesc - gdt - 1)
   .long   gdt
-
