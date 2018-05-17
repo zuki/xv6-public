@@ -1,27 +1,27 @@
-# Context switch
+# コンテキストスイッチ
 #
 #   void swtch(struct context **old, struct context *new);
-# 
-# Save the current registers on the stack, creating
-# a struct context, and save its address in *old.
-# Switch stacks to new and pop previously-saved registers.
+#
+# カレントレジスタをスタック上に保存し、context構造体を作成して、
+# そのアドレスを*oldに保存する。
+# スタックをnewに切り替え、前回保存したレジスタをポップする。
 
 .globl swtch
 swtch:
-  movl 4(%esp), %eax
-  movl 8(%esp), %edx
+  movl 4(%esp), %eax       # old
+  movl 8(%esp), %edx       # new
 
-  # Save old callee-save registers
+  # 旧callee-saveレジスタを保存
   pushl %ebp
   pushl %ebx
   pushl %esi
   pushl %edi
 
-  # Switch stacks
+  # スタックを切り替える
   movl %esp, (%eax)
   movl %edx, %esp
 
-  # Load new callee-save registers
+  # 新callee-saveレジスタをロード
   popl %edi
   popl %esi
   popl %ebx
