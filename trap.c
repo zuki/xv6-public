@@ -8,9 +8,9 @@
 #include "traps.h"
 #include "spinlock.h"
 
-// Interrupt descriptor table (shared by all CPUs).
+// 割り込みディスクリプタテーブル（すべてのCPUで共有される）
 struct gatedesc idt[256];
-extern uint vectors[];  // in vectors.S: array of 256 entry pointers
+extern uint vectors[];  // vectors.Sで設定される: 256エントリポインタの配列
 struct spinlock tickslock;
 uint ticks;
 
@@ -61,7 +61,7 @@ trap(struct trapframe *tf)
     lapiceoi();
     break;
   case T_IRQ0 + IRQ_IDE+1:
-    // Bochs generates spurious IDE1 interrupts.
+    // BochsはスプリアスIDE1割り込みを生成する。
     break;
   case T_IRQ0 + IRQ_KBD:
     kbdintr();
@@ -81,12 +81,12 @@ trap(struct trapframe *tf)
   //PAGEBREAK: 13
   default:
     if(myproc() == 0 || (tf->cs&3) == 0){
-      // In kernel, it must be our mistake.
+      // カーネルたったら、何か問題があったに違いない。
       cprintf("unexpected trap %d from cpu %d eip %x (cr2=0x%x)\n",
               tf->trapno, cpuid(), tf->eip, rcr2());
       panic("trap");
     }
-    // In user space, assume process misbehaved.
+    // ユーザ空間だったら、プロセスが不正を行ったとみなす。
     cprintf("pid %d %s: trap %d err %d on cpu %d "
             "eip 0x%x addr 0x%x--kill proc\n",
             myproc()->pid, myproc()->name, tf->trapno,
@@ -94,19 +94,19 @@ trap(struct trapframe *tf)
     myproc()->killed = 1;
   }
 
-  // Force process exit if it has been killed and is in user space.
-  // (If it is still executing in the kernel, let it keep running
-  // until it gets to the regular system call return.)
+  // プロセスがkillされていて、ユーザ空間に合ったらプロセスを
+  // 終了させる（カーネルで実行中の場合は、一般的なシステム
+  // コールの復帰を確認するまで実行を継続させる）。
   if(myproc() && myproc()->killed && (tf->cs&3) == DPL_USER)
     exit();
 
-  // Force process to give up CPU on clock tick.
-  // If interrupts were on while locks held, would need to check nlock.
+  // クロックティックではCPUを放棄させる。
+  // 割り込みがロックの保持中にあった場合は、nlockをチェックする必要がある。
   if(myproc() && myproc()->state == RUNNING &&
      tf->trapno == T_IRQ0+IRQ_TIMER)
     yield();
 
-  // Check if the process has been killed since we yielded
+  // yield中にプロセスがkillされたか否かをチェックする。
   if(myproc() && myproc()->killed && (tf->cs&3) == DPL_USER)
     exit();
 }
