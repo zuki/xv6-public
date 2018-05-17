@@ -4,11 +4,10 @@ struct buf {
   uint blockno;
   struct sleeplock lock;
   uint refcnt;
-  struct buf *prev; // LRU cache list
+  struct buf *prev; // LRUキャッシュリスト
   struct buf *next;
-  struct buf *qnext; // disk queue
+  struct buf *qnext; // ディスクキュー
   uchar data[BSIZE];
 };
-#define B_VALID 0x2  // buffer has been read from disk
-#define B_DIRTY 0x4  // buffer needs to be written to disk
-
+#define B_VALID 0x2  // バッファはディスクから読み込まれている
+#define B_DIRTY 0x4  // バッファをディスクに書き込む必要がある
