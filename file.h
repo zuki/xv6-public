@@ -1,6 +1,6 @@
 struct file {
   enum { FD_NONE, FD_PIPE, FD_INODE } type;
-  int ref; // reference count
+  int ref; // 参照カウント
   char readable;
   char writable;
   struct pipe *pipe;
@@ -9,15 +9,15 @@ struct file {
 };
 
 
-// in-memory copy of an inode
+// inodeのインメモリコピー
 struct inode {
-  uint dev;           // Device number
-  uint inum;          // Inode number
-  int ref;            // Reference count
-  struct sleeplock lock; // protects everything below here
-  int valid;          // inode has been read from disk?
+  uint dev;           // デバイス番号
+  uint inum;          // inode番号
+  int ref;            // 参照カウント
+  struct sleeplock lock; // 以下のすべてを保護する
+  int valid;          // inodeはディスクから読み込まれているか?
 
-  short type;         // copy of disk inode
+  short type;         // ディスクinodeのコピー
   short major;
   short minor;
   short nlink;
@@ -25,8 +25,8 @@ struct inode {
   uint addrs[NDIRECT+1];
 };
 
-// table mapping major device number to
-// device functions
+// メジャーデバイス番号をデバイス関数に
+// マッピングするテーブル
 struct devsw {
   int (*read)(struct inode*, char*, int);
   int (*write)(struct inode*, char*, int);
