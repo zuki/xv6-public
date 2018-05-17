@@ -1,4 +1,4 @@
-// Simple PIO-based (non-DMA) IDE driver code.
+// 簡単なPIOベース（DMAではない）IDEドライバコード。
 
 #include "types.h"
 #include "defs.h"
@@ -24,9 +24,9 @@
 #define IDE_CMD_RDMUL 0xc4
 #define IDE_CMD_WRMUL 0xc5
 
-// idequeue points to the buf now being read/written to the disk.
-// idequeue->qnext points to the next buf to be processed.
-// You must hold idelock while manipulating queue.
+// idequeue は現在ディスクを読み込み/書き込みしているバッファを指している。
+// idequeue->qnext は次に処理するバッファを指している。
+// キューの操作中はidelockを保持しなければならない。
 
 static struct spinlock idelock;
 static struct buf *idequeue;
@@ -34,7 +34,7 @@ static struct buf *idequeue;
 static int havedisk1;
 static void idestart(struct buf*);
 
-// Wait for IDE disk to become ready.
+// IDEディスクの準備が整うのを待つ。
 static int
 idewait(int checkerr)
 {
@@ -56,7 +56,7 @@ ideinit(void)
   ioapicenable(IRQ_IDE, ncpu - 1);
   idewait(0);
 
-  // Check if disk 1 is present
+  // ディスク1が存在するかチェックする。
   outb(0x1f6, 0xe0 | (1<<4));
   for(i=0; i<1000; i++){
     if(inb(0x1f7) != 0){
@@ -65,11 +65,11 @@ ideinit(void)
     }
   }
 
-  // Switch back to disk 0.
+  // ディスク0に戻す。
   outb(0x1f6, 0xe0 | (0<<4));
 }
 
-// Start the request for b.  Caller must hold idelock.
+// bの要求を開始する。呼び出し側はidelockを保持していなければならない、
 static void
 idestart(struct buf *b)
 {
@@ -85,8 +85,8 @@ idestart(struct buf *b)
   if (sector_per_block > 7) panic("idestart");
 
   idewait(0);
-  outb(0x3f6, 0);  // generate interrupt
-  outb(0x1f2, sector_per_block);  // number of sectors
+  outb(0x3f6, 0);  // 割り込みを生成する
+  outb(0x1f2, sector_per_block);  // セクターの数
   outb(0x1f3, sector & 0xff);
   outb(0x1f4, (sector >> 8) & 0xff);
   outb(0x1f5, (sector >> 16) & 0xff);
@@ -99,13 +99,13 @@ idestart(struct buf *b)
   }
 }
 
-// Interrupt handler.
+// 割り込みハンドラ
 void
 ideintr(void)
 {
   struct buf *b;
 
-  // First queued buffer is the active request.
+  // キューの先頭のバッファはアクティブリクエストである。
   acquire(&idelock);
 
   if((b = idequeue) == 0){
@@ -114,16 +114,16 @@ ideintr(void)
   }
   idequeue = b->qnext;
 
-  // Read data if needed.
+  // 必要ならデータを読み込む。
   if(!(b->flags & B_DIRTY) && idewait(1) >= 0)
     insl(0x1f0, b->data, BSIZE/4);
 
-  // Wake process waiting for this buf.
+  // このバッファを待っているプロセスを起こす。
   b->flags |= B_VALID;
   b->flags &= ~B_DIRTY;
   wakeup(b);
 
-  // Start disk on next buf in queue.
+  // キューの次のバッファでディスクを起動する。
   if(idequeue != 0)
     idestart(idequeue);
 
@@ -131,9 +131,9 @@ ideintr(void)
 }
 
 //PAGEBREAK!
-// Sync buf with disk.
-// If B_DIRTY is set, write buf to disk, clear B_DIRTY, set B_VALID.
-// Else if B_VALID is not set, read buf from disk, set B_VALID.
+// バッファとディスクを同期する。B_DIRTYがセットされていたら、バッファをディスクに書き込み、
+// B_DIRTYをクリアして、B_VALIDをセットする。B_DIRTYもB_VALIDもセットされていない場合は、
+// ディスクからバッファに読み込み、B_VALIDをセットする。
 void
 iderw(struct buf *b)
 {
@@ -148,17 +148,17 @@ iderw(struct buf *b)
 
   acquire(&idelock);  //DOC:acquire-lock
 
-  // Append b to idequeue.
+  // bをidequeueに追加する。
   b->qnext = 0;
   for(pp=&idequeue; *pp; pp=&(*pp)->qnext)  //DOC:insert-queue
     ;
   *pp = b;
 
-  // Start disk if necessary.
+  // 必要ならディスクを起動する。
   if(idequeue == b)
     idestart(b);
 
-  // Wait for request to finish.
+  // 要求が完了するのを待つ。
   while((b->flags & (B_VALID|B_DIRTY)) != B_VALID){
     sleep(b, &idelock);
   }
