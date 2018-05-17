@@ -7,13 +7,13 @@
 #include "x86.h"
 #include "syscall.h"
 
-// User code makes a system call with INT T_SYSCALL.
-// System call number in %eax.
-// Arguments on the stack, from the user call to the C
-// library system call function. The saved user %esp points
-// to a saved program counter, and then the first argument.
+// ユーザコードは INT T_SYSCALL でシステムコールを行う。
+// システムコール番号は %eax に置かれる。
+// スタックに積まれた引数は、ユーザコールからCライブラリの
+// システムコール関数に渡される。保存されるユーザ%espは、保存されるプログラム
+// カウンタを指しており、次が最初の引数である（最後の引数からスタックに積まれる）。
 
-// Fetch the int at addr from the current process.
+// カレントプロセスからaddrにあるintを取り出す。
 int
 fetchint(uint addr, int *ip)
 {
@@ -25,9 +25,9 @@ fetchint(uint addr, int *ip)
   return 0;
 }
 
-// Fetch the nul-terminated string at addr from the current process.
-// Doesn't actually copy the string - just sets *pp to point at it.
-// Returns length of string, not including nul.
+// カレントプロセスからaddrにあるヌル終端文字列を取り出す。
+// 実際には文字列はコピーしない。*ppがそれを指し示すように設定するだけである。
+// 文字列の長さ（ヌルを含まない）を返す。
 int
 fetchstr(uint addr, char **pp)
 {
@@ -45,22 +45,22 @@ fetchstr(uint addr, char **pp)
   return -1;
 }
 
-// Fetch the nth 32-bit system call argument.
+// n番目の32ビットシステムコール引数を取り出す。
 int
 argint(int n, int *ip)
 {
   return fetchint((myproc()->tf->esp) + 4 + 4*n, ip);
 }
 
-// Fetch the nth word-sized system call argument as a pointer
-// to a block of memory of size bytes.  Check that the pointer
-// lies within the process address space.
+// n番目のワードサイズ(32bit)のシステムコール引数をsizeバイトのメモリブロックを指し示す
+// ポインタとして取り出す。ポインタがプロセスのアドレス空間に
+// あるかチェックする。
 int
 argptr(int n, char **pp, int size)
 {
   int i;
   struct proc *curproc = myproc();
- 
+
   if(argint(n, &i) < 0)
     return -1;
   if(size < 0 || (uint)i >= curproc->sz || (uint)i+size > curproc->sz)
@@ -69,10 +69,10 @@ argptr(int n, char **pp, int size)
   return 0;
 }
 
-// Fetch the nth word-sized system call argument as a string pointer.
-// Check that the pointer is valid and the string is nul-terminated.
-// (There is no shared writable memory, so the string can't change
-// between this check and being used by the kernel.)
+// n番目のワードサイズのシステムコール引数を文字列ポインタとして取り出す。
+// ポインタが有効かつ文字列がヌル終端であることをチェックする。
+// （共有の書き込み可能メモリがないので、このチェックのために
+// カーネルが使用する文字列を変更できない）
 int
 argstr(int n, char **pp)
 {
