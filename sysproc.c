@@ -17,7 +17,7 @@ int
 sys_exit(void)
 {
   exit();
-  return 0;  // not reached
+  return 0;  // ここには来ない
 }
 
 int
@@ -77,8 +77,8 @@ sys_sleep(void)
   return 0;
 }
 
-// return how many clock tick interrupts have occurred
-// since start.
+// スタート以来、クロックティック割り込みが
+// 何回生じたかを返す。
 int
 sys_uptime(void)
 {
