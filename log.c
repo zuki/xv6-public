@@ -6,31 +6,31 @@
 #include "fs.h"
 #include "buf.h"
 
-// Simple logging that allows concurrent FS system calls.
+// 並列のFSシステムコールを可能にするシンプルなロギング。
 //
-// A log transaction contains the updates of multiple FS system
-// calls. The logging system only commits when there are
-// no FS system calls active. Thus there is never
-// any reasoning required about whether a commit might
-// write an uncommitted system call's updates to disk.
+// ログトランザクションは複数のFSシステムコールの更新を含んでいる。
+// ロギングシステムはアクティブなFSシステムコールが存在しない場合にのみ
+// コミットを行う。したがって、コミットしていないシステムコールの
+// 更新をコミットがディスクに書き込む可能性があるか否かを
+// 考える必要はまったくない
 //
-// A system call should call begin_op()/end_op() to mark
-// its start and end. Usually begin_op() just increments
-// the count of in-progress FS system calls and returns.
-// But if it thinks the log is close to running out, it
-// sleeps until the last outstanding end_op() commits.
+// システムコールはその開始と終了を知らせるためにbegin_op()/end_op()を
+// 呼び出さなければならない。通常、begin_op()は実行中のFSシステムコールの
+// カウントをインクリメントしただけで復帰する。
+// しかし、ログが枯渇してクローズされると思われる場合、begin_op()は
+// 最後の未処理のend_op()がコミットされるまでスリープする。
 //
-// The log is a physical re-do log containing disk blocks.
-// The on-disk log format:
-//   header block, containing block #s for block A, B, C, ...
-//   block A
-//   block B
-//   block C
+// ログはディスクブロックを含む物理的なre-doログである。
+// オンディスクログフォーマットは次の通り:
+//   ヘッダブロック、ブロックA, B, C...のブロック番号を含む
+//   ブロックA
+//   ブロックB
+//   ブロックC
 //   ...
-// Log appends are synchronous.
+// ログの追加は同期的に行われる
 
-// Contents of the header block, used for both the on-disk header block
-// and to keep track in memory of logged block# before commit.
+// ヘッダブロックの内容。オンディスクヘッダブロックと
+// コミット前のログ出力ブロック番号をメモリ上で追跡するために使用される
 struct logheader {
   int n;
   int block[LOGSIZE];
@@ -40,8 +40,8 @@ struct log {
   struct spinlock lock;
   int start;
   int size;
-  int outstanding; // how many FS sys calls are executing.
-  int committing;  // in commit(), please wait.
+  int outstanding; // FSシステムコールがいくつ実行中か
+  int committing;  // commit()中なので待て
   int dev;
   struct logheader lh;
 };
@@ -65,23 +65,23 @@ initlog(int dev)
   recover_from_log();
 }
 
-// Copy committed blocks from log to their home location
+// コミットしたブロックをログからその本来の場所にコピーする。
 static void
 install_trans(void)
 {
   int tail;
 
   for (tail = 0; tail < log.lh.n; tail++) {
-    struct buf *lbuf = bread(log.dev, log.start+tail+1); // read log block
-    struct buf *dbuf = bread(log.dev, log.lh.block[tail]); // read dst
-    memmove(dbuf->data, lbuf->data, BSIZE);  // copy block to dst
-    bwrite(dbuf);  // write dst to disk
+    struct buf *lbuf = bread(log.dev, log.start+tail+1); // ログブロックを読み込む
+    struct buf *dbuf = bread(log.dev, log.lh.block[tail]); // dstを読み込む
+    memmove(dbuf->data, lbuf->data, BSIZE);  // ブロックをdstにコピーする
+    bwrite(dbuf);  // dstからディスクに書き込む
     brelse(lbuf);
     brelse(dbuf);
   }
 }
 
-// Read the log header from disk into the in-memory log header
+// ログヘッダをディスクからインメモリログヘッダに読み込む
 static void
 read_head(void)
 {
@@ -95,9 +95,9 @@ read_head(void)
   brelse(buf);
 }
 
-// Write in-memory log header to disk.
-// This is the true point at which the
-// current transaction commits.
+// インメモリログヘッダをディスクに書き込む。
+// ここで本当にカレントトランザクションが
+// コミットされることになる。
 static void
 write_head(void)
 {
@@ -116,12 +116,12 @@ static void
 recover_from_log(void)
 {
   read_head();
-  install_trans(); // if committed, copy from log to disk
+  install_trans(); // コミットされたら、ログからディスクにコピーする
   log.lh.n = 0;
-  write_head(); // clear the log
+  write_head(); // ログをクリア
 }
 
-// called at the start of each FS system call.
+// 各FSシステムコールの最初に呼び出される。
 void
 begin_op(void)
 {
@@ -130,7 +130,7 @@ begin_op(void)
     if(log.committing){
       sleep(&log, &log.lock);
     } else if(log.lh.n + (log.outstanding+1)*MAXOPBLOCKS > LOGSIZE){
-      // this op might exhaust log space; wait for commit.
+      // このオペレーションはログスペースを使い尽くす可能性がある; コミットを待つ
       sleep(&log, &log.lock);
     } else {
       log.outstanding += 1;
@@ -140,8 +140,8 @@ begin_op(void)
   }
 }
 
-// called at the end of each FS system call.
-// commits if this was the last outstanding operation.
+// 各FSシステムコールの最後に呼び出される。
+// これが最後の未処理の操作だった場合はコミットする。
 void
 end_op(void)
 {
@@ -155,16 +155,16 @@ end_op(void)
     do_commit = 1;
     log.committing = 1;
   } else {
-    // begin_op() may be waiting for log space,
-    // and decrementing log.outstanding has decreased
-    // the amount of reserved space.
+    // begin_op()がログスペースが空くのを待っている可能性がある。
+    // また、log.outstandingをデクリメントしたことで予約スペースが
+    // 減ったかもしれない。
     wakeup(&log);
   }
   release(&log.lock);
 
   if(do_commit){
-    // call commit w/o holding locks, since not allowed
-    // to sleep with locks.
+    // ルックを保持したままスリープすることは許されないので、
+    // ロックを獲得せずにcommitを呼び出す。
     commit();
     acquire(&log.lock);
     log.committing = 0;
@@ -173,17 +173,17 @@ end_op(void)
   }
 }
 
-// Copy modified blocks from cache to log.
+// 変更されたブロックをキャッシュからログにコピーする。
 static void
 write_log(void)
 {
   int tail;
 
   for (tail = 0; tail < log.lh.n; tail++) {
-    struct buf *to = bread(log.dev, log.start+tail+1); // log block
-    struct buf *from = bread(log.dev, log.lh.block[tail]); // cache block
+    struct buf *to = bread(log.dev, log.start+tail+1); // ログブロック
+    struct buf *from = bread(log.dev, log.lh.block[tail]); // キャッシュブロック
     memmove(to->data, from->data, BSIZE);
-    bwrite(to);  // write the log
+    bwrite(to);  // ログを書き込む
     brelse(from);
     brelse(to);
   }
@@ -193,19 +193,19 @@ static void
 commit()
 {
   if (log.lh.n > 0) {
-    write_log();     // Write modified blocks from cache to log
-    write_head();    // Write header to disk -- the real commit
-    install_trans(); // Now install writes to home locations
+    write_log();     // 変更されたブロックをキャッシュからログに書き込む
+    write_head();    // ヘッダをディスクに書き込む -- 本当のコミット
+    install_trans(); // 書き込み内容を本来の場所にコピーする
     log.lh.n = 0;
-    write_head();    // Erase the transaction from the log
+    write_head();    // トランザクションをログから消去するE
   }
 }
 
-// Caller has modified b->data and is done with the buffer.
-// Record the block number and pin in the cache with B_DIRTY.
-// commit()/write_log() will do the disk write.
+// 呼び出し側でb->dataを変更した。それは、バッファ上で行われている。
+// ブロック番号を記録して、キャッシュのB_DIRTYフラグをたてる。
+// commit()/write_log()がディスクへの書き込みを行う。
 //
-// log_write() replaces bwrite(); a typical use is:
+// log_write()はbwrite()を置き換える; 通常の使用法は次の通り:
 //   bp = bread(...)
 //   modify bp->data[]
 //   log_write(bp)
@@ -222,13 +222,12 @@ log_write(struct buf *b)
 
   acquire(&log.lock);
   for (i = 0; i < log.lh.n; i++) {
-    if (log.lh.block[i] == b->blockno)   // log absorbtion
+    if (log.lh.block[i] == b->blockno)   // ログ統合
       break;
   }
   log.lh.block[i] = b->blockno;
   if (i == log.lh.n)
     log.lh.n++;
-  b->flags |= B_DIRTY; // prevent eviction
+  b->flags |= B_DIRTY; // 追い立てを防ぐ
   release(&log.lock);
 }
-
