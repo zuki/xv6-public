@@ -1,7 +1,7 @@
 //
-// File-system system calls.
-// Mostly argument checking, since we don't trust
-// user code, and calls into file.c and fs.c.
+// ファイルシステム関連のシステムコール。
+// 殆どの関数で引数をチェックしている。ユーザのコードは信用していないし、
+// file.cとfs.cを呼び出すからである。
 //
 
 #include "types.h"
@@ -16,8 +16,8 @@
 #include "file.h"
 #include "fcntl.h"
 
-// Fetch the nth word-sized system call argument as a file descriptor
-// and return both the descriptor and the corresponding struct file.
+// システムコールのN番目のワードサイズの引数をファイル記述子として取り出し、
+// その記述子と対応するfile構造体を返す。
 static int
 argfd(int n, int *pfd, struct file **pf)
 {
@@ -35,8 +35,8 @@ argfd(int n, int *pfd, struct file **pf)
   return 0;
 }
 
-// Allocate a file descriptor for the given file.
-// Takes over file reference from caller on success.
+// 指定されたファイルのファイル記述子を割り当てる。
+// 成功した場合、呼び出し側からファイル参照を引き継ぐ。
 static int
 fdalloc(struct file *f)
 {
@@ -114,7 +114,7 @@ sys_fstat(void)
   return filestat(f, st);
 }
 
-// Create the path new as a link to the same inode as old.
+// old と同じinodeへのリンクとして新しパスを作成する。
 int
 sys_link(void)
 {
@@ -164,7 +164,7 @@ bad:
   return -1;
 }
 
-// Is the directory dp empty except for "." and ".." ?
+// ディレクトリ dp は"."と".."を除いて、空であるか?
 static int
 isdirempty(struct inode *dp)
 {
@@ -200,7 +200,7 @@ sys_unlink(void)
 
   ilock(dp);
 
-  // Cannot unlink "." or "..".
+  // "."と".."はunlinkできない。
   if(namecmp(name, ".") == 0 || namecmp(name, "..") == 0)
     goto bad;
 
@@ -267,10 +267,10 @@ create(char *path, short type, short major, short minor)
   ip->nlink = 1;
   iupdate(ip);
 
-  if(type == T_DIR){  // Create . and .. entries.
-    dp->nlink++;  // for ".."
+  if(type == T_DIR){  // "."と".."エントリを作成する
+    dp->nlink++;  // ".."エントリ
     iupdate(dp);
-    // No ip->nlink++ for ".": avoid cyclic ref count.
+    // "."では、循環参照カウントを避けるために、ip->nlink++をしない。
     if(dirlink(ip, ".", ip->inum) < 0 || dirlink(ip, "..", dp->inum) < 0)
       panic("create dots");
   }
@@ -375,7 +375,7 @@ sys_chdir(void)
   char *path;
   struct inode *ip;
   struct proc *curproc = myproc();
-  
+
   begin_op();
   if(argstr(0, &path) < 0 || (ip = namei(path)) == 0){
     end_op();
