@@ -1,5 +1,5 @@
 //
-// File descriptors
+// ファイル記述子
 //
 
 #include "types.h"
@@ -22,7 +22,7 @@ fileinit(void)
   initlock(&ftable.lock, "ftable");
 }
 
-// Allocate a file structure.
+// ファイル構造体を割り当てる。
 struct file*
 filealloc(void)
 {
@@ -40,7 +40,7 @@ filealloc(void)
   return 0;
 }
 
-// Increment ref count for file f.
+// ファイル f の参照カウントをインクリメントする。
 struct file*
 filedup(struct file *f)
 {
@@ -52,7 +52,7 @@ filedup(struct file *f)
   return f;
 }
 
-// Close file f.  (Decrement ref count, close when reaches 0.)
+// ファイル f を閉じる（参照カウントをデクリメントして、0になったら閉じる）。
 void
 fileclose(struct file *f)
 {
@@ -79,7 +79,7 @@ fileclose(struct file *f)
   }
 }
 
-// Get metadata about file f.
+// ファイル f に関するメタデータを取得する。
 int
 filestat(struct file *f, struct stat *st)
 {
@@ -92,7 +92,7 @@ filestat(struct file *f, struct stat *st)
   return -1;
 }
 
-// Read from file f.
+// ファイル f から読み込む。
 int
 fileread(struct file *f, char *addr, int n)
 {
@@ -113,7 +113,7 @@ fileread(struct file *f, char *addr, int n)
 }
 
 //PAGEBREAK!
-// Write to file f.
+// ファイル f に書き込む。
 int
 filewrite(struct file *f, char *addr, int n)
 {
@@ -124,12 +124,12 @@ filewrite(struct file *f, char *addr, int n)
   if(f->type == FD_PIPE)
     return pipewrite(f->pipe, addr, n);
   if(f->type == FD_INODE){
-    // write a few blocks at a time to avoid exceeding
-    // the maximum log transaction size, including
-    // i-node, indirect block, allocation blocks,
-    // and 2 blocks of slop for non-aligned writes.
-    // this really belongs lower down, since writei()
-    // might be writing a device like the console.
+    // 最大ログトランザクションサイズを超えないように
+    // 数ブロックずつ書き込む。関係するのは、inode, 間接ブロック、
+    // 割り当てブロック、非アライン書き込みのための
+    // 2ブロックのスロット。
+    // writei()がコンソールなどのデバイスに書き込む場合があるので
+    // これは本当に低速の部類に入る。
     int max = ((MAXOPBLOCKS-1-1-2) / 2) * 512;
     int i = 0;
     while(i < n){
@@ -154,4 +154,3 @@ filewrite(struct file *f, char *addr, int n)
   }
   panic("filewrite");
 }
-
