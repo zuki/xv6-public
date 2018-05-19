@@ -48,7 +48,7 @@ memmove(void *dst, const void *src, uint n)
   return dst;
 }
 
-// memcpy exists to placate GCC.  Use memmove.
+// memcpyはGCCをなだめるために存在する。memmoveを使用されたい。
 void*
 memcpy(void *dst, const void *src, uint n)
 {
@@ -78,7 +78,7 @@ strncpy(char *s, const char *t, int n)
   return os;
 }
 
-// Like strncpy but guaranteed to NUL-terminate.
+// strncpyと同じだが、NULL終端が保証されている。
 char*
 safestrcpy(char *s, const char *t, int n)
 {
@@ -102,4 +102,3 @@ strlen(const char *s)
     ;
   return n;
 }
-
