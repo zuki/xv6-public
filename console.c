@@ -1,6 +1,6 @@
-// Console input and output.
-// Input is from the keyboard or serial port.
-// Output is written to the screen and serial port.
+// コンソール入出力。
+// 入力はキーボードまたはシリアルオートから。
+// 出力はスクリーンとシリアルポートに書き込まれる。
 
 #include "types.h"
 #include "defs.h"
@@ -50,7 +50,7 @@ printint(int xx, int base, int sign)
 }
 //PAGEBREAK: 50
 
-// Print to the console. only understands %d, %x, %p, %s.
+// コンソールにプリントする。%d, %x, %pのみ理解する。
 void
 cprintf(char *fmt, ...)
 {
@@ -92,7 +92,7 @@ cprintf(char *fmt, ...)
       consputc('%');
       break;
     default:
-      // Print unknown % sequence to draw attention.
+      // 注意を引くために、未知の%シーケンスをプリントする。
       consputc('%');
       consputc(c);
       break;
@@ -111,14 +111,14 @@ panic(char *s)
 
   cli();
   cons.locking = 0;
-  // use lapiccpunum so that we can call panic from mycpu()
+  // mycpu()からpanicを呼べるように、lapiccpunumを使用する。
   cprintf("lapicid %d: panic: ", lapicid());
   cprintf(s);
   cprintf("\n");
   getcallerpcs(&s, pcs);
   for(i=0; i<10; i++)
     cprintf(" %p", pcs[i]);
-  panicked = 1; // freeze other CPU
+  panicked = 1; // 他のCPUをフリーズさせる。
   for(;;)
     ;
 }
@@ -126,14 +126,14 @@ panic(char *s)
 //PAGEBREAK: 50
 #define BACKSPACE 0x100
 #define CRTPORT 0x3d4
-static ushort *crt = (ushort*)P2V(0xb8000);  // CGA memory
+static ushort *crt = (ushort*)P2V(0xb8000);  // CGAメモリ
 
 static void
 cgaputc(int c)
 {
   int pos;
 
-  // Cursor position: col + 80*row.
+  // カーソル位置: col + 80*row.
   outb(CRTPORT, 14);
   pos = inb(CRTPORT+1) << 8;
   outb(CRTPORT, 15);
@@ -144,12 +144,12 @@ cgaputc(int c)
   else if(c == BACKSPACE){
     if(pos > 0) --pos;
   } else
-    crt[pos++] = (c&0xff) | 0x0700;  // black on white
+    crt[pos++] = (c&0xff) | 0x0700;  // 白地に黒
 
   if(pos < 0 || pos > 25*80)
     panic("pos under/overflow");
 
-  if((pos/80) >= 24){  // Scroll up.
+  if((pos/80) >= 24){  // スクロールアップ。
     memmove(crt, crt+80, sizeof(crt[0])*23*80);
     pos -= 80;
     memset(crt+pos, 0, sizeof(crt[0])*(24*80 - pos));
@@ -181,9 +181,9 @@ consputc(int c)
 #define INPUT_BUF 128
 struct {
   char buf[INPUT_BUF];
-  uint r;  // Read index
-  uint w;  // Write index
-  uint e;  // Edit index
+  uint r;  // 読み込みインデックス
+  uint w;  // 書き込みインデックス
+  uint e;  // 編集インデックス
 } input;
 
 #define C(x)  ((x)-'@')  // Control-x
@@ -196,18 +196,18 @@ consoleintr(int (*getc)(void))
   acquire(&cons.lock);
   while((c = getc()) >= 0){
     switch(c){
-    case C('P'):  // Process listing.
-      // procdump() locks cons.lock indirectly; invoke later
+    case C('P'):  // プロセス一覧を表示する。
+      // procdump() はcons.lockを間接的にロックする; 後で呼び出す。
       doprocdump = 1;
       break;
-    case C('U'):  // Kill line.
+    case C('U'):  // １行削除。
       while(input.e != input.w &&
             input.buf[(input.e-1) % INPUT_BUF] != '\n'){
         input.e--;
         consputc(BACKSPACE);
       }
       break;
-    case C('H'): case '\x7f':  // Backspace
+    case C('H'): case '\x7f':  // バックスペース
       if(input.e != input.w){
         input.e--;
         consputc(BACKSPACE);
@@ -228,7 +228,7 @@ consoleintr(int (*getc)(void))
   }
   release(&cons.lock);
   if(doprocdump) {
-    procdump();  // now call procdump() wo. cons.lock held
+    procdump();  // ここでprocdump()を呼び出す。cons.lockが保持される。
   }
 }
 
@@ -253,8 +253,8 @@ consoleread(struct inode *ip, char *dst, int n)
     c = input.buf[input.r++ % INPUT_BUF];
     if(c == C('D')){  // EOF
       if(n < target){
-        // Save ^D for next time, to make sure
-        // caller gets a 0-byte result.
+        // 次回、呼び出し側が0バイトの結果を得られるように、
+        // ^D を保存する。
         input.r--;
       }
       break;
@@ -296,4 +296,3 @@ consoleinit(void)
 
   ioapicenable(IRQ_KBD, 0);
 }
-
