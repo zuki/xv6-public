@@ -1,4 +1,4 @@
-// Intel 8250 serial port (UART).
+// Intel 8250シリアルポート(UART)。
 
 #include "types.h"
 #include "defs.h"
@@ -14,36 +14,36 @@
 
 #define COM1    0x3f8
 
-static int uart;    // is there a uart?
+static int uart;    // uartがあるか?
 
 void
 uartinit(void)
 {
   char *p;
 
-  // Turn off the FIFO
+  // FIFOを止める
   outb(COM1+2, 0);
 
-  // 9600 baud, 8 data bits, 1 stop bit, parity off.
-  outb(COM1+3, 0x80);    // Unlock divisor
+  // 9600 ボー、8 データビット、1 ストップビット、パリティオフ。
+  outb(COM1+3, 0x80);    // divisorのロックを外す
   outb(COM1+0, 115200/9600);
   outb(COM1+1, 0);
-  outb(COM1+3, 0x03);    // Lock divisor, 8 data bits.
+  outb(COM1+3, 0x03);    // divsorをロックする、8 データビット。
   outb(COM1+4, 0);
-  outb(COM1+1, 0x01);    // Enable receive interrupts.
+  outb(COM1+1, 0x01);    // 受信割り込みを有効にする。
 
-  // If status is 0xFF, no serial port.
+  // ステータスが0xFFの場合、シリアルポートがない。
   if(inb(COM1+5) == 0xFF)
     return;
   uart = 1;
 
-  // Acknowledge pre-existing interrupt conditions;
-  // enable interrupts.
+  // 事前の割り込み条件を確認する。
+  // 割り込みを有効にする。
   inb(COM1+2);
   inb(COM1+0);
   ioapicenable(IRQ_COM1, 0);
 
-  // Announce that we're here.
+  // ここにいることを通知する。
   for(p="xv6...\n"; *p; p++)
     uartputc(*p);
 }
