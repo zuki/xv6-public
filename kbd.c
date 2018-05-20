@@ -21,12 +21,12 @@ kbdgetc(void)
     shift |= E0ESC;
     return 0;
   } else if(data & 0x80){
-    // Key released
+    // キーが離された
     data = (shift & E0ESC ? data : data & 0x7F);
     shift &= ~(shiftcode[data] | E0ESC);
     return 0;
   } else if(shift & E0ESC){
-    // Last character was an E0 escape; or with 0x80
+    // 最後の文字が E0 escapeだった; または、0x80と共に押された
     data |= 0x80;
     shift &= ~E0ESC;
   }
