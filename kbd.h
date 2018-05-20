@@ -1,8 +1,8 @@
-// PC keyboard interface constants
+// PCキーボードインターフェース関連の定数
 
-#define KBSTATP         0x64    // kbd controller status port(I)
-#define KBS_DIB         0x01    // kbd data in buffer
-#define KBDATAP         0x60    // kbd data port(I)
+#define KBSTATP         0x64    // キーボードコントローラステータスポート(I)
+#define KBS_DIB         0x01    // バッファのキーボードデータ
+#define KBDATAP         0x60    // キーボードデータポート(I)
 
 #define NO              0
 
@@ -16,7 +16,7 @@
 
 #define E0ESC           (1<<6)
 
-// Special keycodes
+// 特別なキーコード
 #define KEY_HOME        0xE0
 #define KEY_END         0xE1
 #define KEY_UP          0xE2
@@ -109,4 +109,3 @@ static uchar ctlmap[256] =
   [0x97] KEY_HOME,  [0xCF] KEY_END,
   [0xD2] KEY_INS,   [0xD3] KEY_DEL
 };
-
