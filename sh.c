@@ -1,10 +1,10 @@
-// Shell.
+// シェル
 
 #include "types.h"
 #include "user.h"
 #include "fcntl.h"
 
-// Parsed command representation
+// パースし後のコマンド表現
 #define EXEC  1
 #define REDIR 2
 #define PIPE  3
@@ -49,11 +49,11 @@ struct backcmd {
   struct cmd *cmd;
 };
 
-int fork1(void);  // Fork but panics on failure.
+int fork1(void);  // エラー時にpanicを呼び出すfork
 void panic(char*);
 struct cmd *parsecmd(char*);
 
-// Execute cmd.  Never returns.
+// cmdを実行する。復帰しない。
 void
 runcmd(struct cmd *cmd)
 {
@@ -147,7 +147,7 @@ main(void)
   static char buf[100];
   int fd;
 
-  // Ensure that three file descriptors are open.
+  // 3つのファイル記述子がオープンされていることを保証する。
   while((fd = open("console", O_RDWR)) >= 0){
     if(fd >= 3){
       close(fd);
@@ -155,11 +155,11 @@ main(void)
     }
   }
 
-  // Read and run input commands.
+  // 入力されたコマンドを読み込んで実行する。
   while(getcmd(buf, sizeof(buf)) >= 0){
     if(buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' '){
-      // Chdir must be called by the parent, not the child.
-      buf[strlen(buf)-1] = 0;  // chop \n
+      // chdir は子プロセスではなく、親プロセスから呼ばれなければならない。
+      buf[strlen(buf)-1] = 0;  // \nを捨てる
       if(chdir(buf+3) < 0)
         printf(2, "cannot cd %s\n", buf+3);
       continue;
@@ -190,7 +190,7 @@ fork1(void)
 }
 
 //PAGEBREAK!
-// Constructors
+// コンストラクタ
 
 struct cmd*
 execcmd(void)
@@ -257,7 +257,7 @@ backcmd(struct cmd *subcmd)
   return (struct cmd*)cmd;
 }
 //PAGEBREAK!
-// Parsing
+// パース処理
 
 char whitespace[] = " \t\r\n\v";
 char symbols[] = "<|>&;()";
@@ -445,7 +445,7 @@ parseexec(char **ps, char *es)
   return ret;
 }
 
-// NUL-terminate all the counted strings.
+// すべての終了文字列をヌル終端する。
 struct cmd*
 nulterminate(struct cmd *cmd)
 {
