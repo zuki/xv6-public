@@ -1,4 +1,4 @@
-// init: The initial user-level program
+// init: 最初のユーザレベルのプログラム
 
 #include "types.h"
 #include "stat.h"
