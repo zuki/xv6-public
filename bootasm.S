@@ -2,26 +2,26 @@
 #include "memlayout.h"
 #include "mmu.h"
 
-# Start the first CPU: switch to 32-bit protected mode, jump into C.
-# The BIOS loads this code from the first sector of the hard disk into
-# memory at physical address 0x7c00 and starts executing in real mode
-# with %cs=0 %ip=7c00.
+# 最初のCPUを起動する: 32ビットプロテクトモードに切り替えて
+# Cの関数にジャンプする。
+# BIOSはこのコードをHDの第1セクタから物理アドレス 0x7c00のメモリに
+# ロードして、%cs=0, %ip=7c00 として、リアルモードで実行を開始する。
 
-.code16                       # Assemble for 16-bit mode
+.code16                       # 16ビットモードでアセンブルする
 .globl start
 start:
-  cli                         # BIOS enabled interrupts; disable
+  cli                         # BIOSが有効にした割り込みを禁止する。
 
-  # Zero data segment registers DS, ES, and SS.
-  xorw    %ax,%ax             # Set %ax to zero
-  movw    %ax,%ds             # -> Data Segment
-  movw    %ax,%es             # -> Extra Segment
-  movw    %ax,%ss             # -> Stack Segment
+  # データセグメントレジスタ DS, ES, SS を0クリア。
+  xorw    %ax,%ax             # %ax を0にセット
+  movw    %ax,%ds             # -> データセグメント
+  movw    %ax,%es             # -> 拡張セグメント
+  movw    %ax,%ss             # -> スタックセグメント
 
-  # Physical address line A20 is tied to zero so that the first PCs 
-  # with 2 MB would run software that assumed 1 MB.  Undo that.
+  # 物理アドレスラインA20は0にセットされており、はじめて2MBのメモリを持つ
+  # PCで1MBを想定したソフトウェアを実行できるようした。これを元に戻す。
 seta20.1:
-  inb     $0x64,%al               # Wait for not busy
+  inb     $0x64,%al               # busy状態が解消されるまで待機
   testb   $0x2,%al
   jnz     seta20.1
 
@@ -29,44 +29,44 @@ seta20.1:
   outb    %al,$0x64
 
 seta20.2:
-  inb     $0x64,%al               # Wait for not busy
+  inb     $0x64,%al               # busy状態が解消されるまで待機
   testb   $0x2,%al
   jnz     seta20.2
 
   movb    $0xdf,%al               # 0xdf -> port 0x60
   outb    %al,$0x60
 
-  # Switch from real to protected mode.  Use a bootstrap GDT that makes
-  # virtual addresses map directly to physical addresses so that the
-  # effective memory map doesn't change during the transition.
+  # リアルモードからプロテクトモードに切り替える。仮想アドレスをそのまま
+  # 物理アドレスにマップするブートストラップGDTを使うことにより、
+  # 実効メモリマップが移行期間中変更されない。
   lgdt    gdtdesc
   movl    %cr0, %eax
   orl     $CR0_PE, %eax
   movl    %eax, %cr0
 
 //PAGEBREAK!
-  # Complete the transition to 32-bit protected mode by using a long jmp
-  # to reload %cs and %eip.  The segment descriptors are set up with no
-  # translation, so that the mapping is still the identity mapping.
+  # ロングジャンプを使用することにより、%csと%eipを再ロードして、32ビット
+  # プロテクトモードへの移行を完了させる。セグメントディスクリプタは
+  # 変更せずに設定されるので、マッピングは恒等マッピングのままである。
   ljmp    $(SEG_KCODE<<3), $start32
 
-.code32  # Tell assembler to generate 32-bit code now.
+.code32  # アセンブラにここからは32ビットコードを生成するように伝える。
 start32:
-  # Set up the protected-mode data segment registers
-  movw    $(SEG_KDATA<<3), %ax    # Our data segment selector
-  movw    %ax, %ds                # -> DS: Data Segment
-  movw    %ax, %es                # -> ES: Extra Segment
-  movw    %ax, %ss                # -> SS: Stack Segment
-  movw    $0, %ax                 # Zero segments not ready for use
+  # プロテクトモードのデータセグメントレジスタを設定する。
+  movw    $(SEG_KDATA<<3), %ax    # 使用するデータセグメントセレクタ
+  movw    %ax, %ds                # -> DS: データセグメント
+  movw    %ax, %es                # -> ES: 拡張セグメント
+  movw    %ax, %ss                # -> SS: スタックセグメント
+  movw    $0, %ax                 # 未使用のセグメントは0クリア
   movw    %ax, %fs                # -> FS
   movw    %ax, %gs                # -> GS
 
-  # Set up the stack pointer and call into C.
+  # スタックポインタをセットして、Cno関数を呼び出す。
   movl    $start, %esp
   call    bootmain
 
-  # If bootmain returns (it shouldn't), trigger a Bochs
-  # breakpoint if running under Bochs, then loop.
+  # bootmainが復帰したら（しないはず）、Bochs下で実行している場合は
+  # Bochsのブレークポイントを呼び出して、ループする。
   movw    $0x8a00, %ax            # 0x8a00 -> port 0x8a00
   movw    %ax, %dx
   outw    %ax, %dx
@@ -75,14 +75,13 @@ start32:
 spin:
   jmp     spin
 
-# Bootstrap GDT
-.p2align 2                                # force 4 byte alignment
+# ブートストラップGDT
+.p2align 2                                # 4バイト境界に揃える
 gdt:
-  SEG_NULLASM                             # null seg
-  SEG_ASM(STA_X|STA_R, 0x0, 0xffffffff)   # code seg
-  SEG_ASM(STA_W, 0x0, 0xffffffff)         # data seg
+  SEG_NULLASM                             # ヌルセグメント
+  SEG_ASM(STA_X|STA_R, 0x0, 0xffffffff)   # コードセグメント
+  SEG_ASM(STA_W, 0x0, 0xffffffff)         # データセグメント
 
 gdtdesc:
   .word   (gdtdesc - gdt - 1)             # sizeof(gdt) - 1
-  .long   gdt                             # address gdt
-
+  .long   gdt                             # gdtアドレス
