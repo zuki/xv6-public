@@ -10,8 +10,7 @@
 struct {
     struct spinlock lock;
     struct proc proc [NPROC];
-}
-ptable;
+} ptable;
 
 static struct proc * initproc;
 
@@ -21,9 +20,11 @@ extern void trapret(void);
 
 static void wakeup1( void * chan );
 
-void pinit(void) {
-    initlock( &ptable . lock, "ptable" );
-  }
+void
+pinit(void)
+{
+  initlock( &ptable . lock, "ptable" );
+}
 
 // 割り込みを禁止してから呼び出す必要がある
 int

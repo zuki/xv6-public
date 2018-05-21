@@ -21,7 +21,6 @@ seginit(void)
   // カーネル用とユーザ用のコードディスクリプタを共用することはできない。
   // なぜなら、共有する場合は、DPL_USRをもつことになるが、CPUはCPL=0から
   // DPL=3への割り込みを禁止しているからである。
-
   c = &cpus[cpuid()];
   c->gdt[SEG_KCODE] = SEG(STA_X|STA_R, 0, 0xffffffff, 0);
   c->gdt[SEG_KDATA] = SEG(STA_W, 0, 0xffffffff, 0);

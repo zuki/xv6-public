@@ -36,7 +36,7 @@ readsb(int dev, struct superblock *sb)
   memmove(sb, bp->data, sizeof(*sb));
   brelse(bp);
 }
-
+//PAGEBREAK!
 // ブロックを0クリア
 static void
 bzero(int dev, int bno)
@@ -102,7 +102,8 @@ bfree(int dev, uint b)
 // ブロックのリスト）を保持する。
 //
 // inodeはディスク上にsb.startinodeから連続的に配置されている。
-// 各inodeはディスク上の位置を示す番号を持っている。
+// 各inodeはディスク上の位置を示す番号を
+// 持っている。
 //
 // カーネルは使用中のinodeのキャシュをメモリ上に保持しており、
 // これにより複数プロセスの使用によるinodeへの同期的アクセスを
@@ -321,7 +322,8 @@ iunlock(struct inode *ip)
 }
 
 // インメモリinodeへの参照をデクリメントする。
-// それが最後の参照だった場合は、inodeキャッシュエントリがリサイクル可能になる。
+// それが最後の参照だった場合は、inodeキャッシュエントリが
+// リサイクル可能になる。
 // それが最後の参照で、それへのリンクがない場合は、ディスク上のinode（とその
 // コンテンツ）を解放する。
 // inodeを解放する必要がある場合に備えて、iput()の呼び出しはすべて
