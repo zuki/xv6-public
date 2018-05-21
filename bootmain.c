@@ -1,9 +1,9 @@
-// Boot loader.
+// ブートローダ。
 //
-// Part of the boot block, along with bootasm.S, which calls bootmain().
-// bootasm.S has put the processor into protected 32-bit mode.
-// bootmain() loads an ELF kernel image from the disk starting at
-// sector 1 and then jumps to the kernel entry routine.
+// bootmain()を呼び出すbootasm.Sと共にブートブロックを形成する。
+// bootasm.Sは、プロセッサを32ビットプロテクトモードにする。
+// bootmain()は、ディスクのセクタ1からELFカーネルイメージをロードして、
+// カーネルのエントリルーチンにジャンプする。
 
 #include "types.h"
 #include "elf.h"
@@ -22,16 +22,16 @@ bootmain(void)
   void (*entry)(void);
   uchar* pa;
 
-  elf = (struct elfhdr*)0x10000;  // scratch space
+  elf = (struct elfhdr*)0x10000;  // 開始位置を設定
 
-  // Read 1st page off disk
+  // ディスクから最初のページを読み込む
   readseg((uchar*)elf, 4096, 0);
 
-  // Is this an ELF executable?
+  // ELF実行ファイルか?
   if(elf->magic != ELF_MAGIC)
-    return;  // let bootasm.S handle error
+    return;  // bootasm.Sにエラー処理を任せる
 
-  // Load each program segment (ignores ph flags).
+  // 各プログラムセグメントをロードする（phフラグは無視する）
   ph = (struct proghdr*)((uchar*)elf + elf->phoff);
   eph = ph + elf->phnum;
   for(; ph < eph; ph++){
@@ -41,8 +41,8 @@ bootmain(void)
       stosb(pa + ph->filesz, 0, ph->memsz - ph->filesz);
   }
 
-  // Call the entry point from the ELF header.
-  // Does not return!
+  // ELFヘッダからエントリポイントを呼び出す。
+  // 復帰しない!
   entry = (void(*)(void))(elf->entry);
   entry();
 }
@@ -50,31 +50,31 @@ bootmain(void)
 void
 waitdisk(void)
 {
-  // Wait for disk ready.
+  // ディスクの用意ができるのを待機する。
   while((inb(0x1F7) & 0xC0) != 0x40)
     ;
 }
 
-// Read a single sector at offset into dst.
+// offsetからセクタを1つdstに読み込む。
 void
 readsect(void *dst, uint offset)
 {
-  // Issue command.
+  // コマンドを発行する。
   waitdisk();
   outb(0x1F2, 1);   // count = 1
   outb(0x1F3, offset);
   outb(0x1F4, offset >> 8);
   outb(0x1F5, offset >> 16);
   outb(0x1F6, (offset >> 24) | 0xE0);
-  outb(0x1F7, 0x20);  // cmd 0x20 - read sectors
+  outb(0x1F7, 0x20);  // cmd 0x20 - セクタの読み込み
 
-  // Read data.
+  // データを読み込む。
   waitdisk();
   insl(0x1F0, dst, SECTSIZE/4);
 }
 
-// Read 'count' bytes at 'offset' from kernel into physical address 'pa'.
-// Might copy more than asked.
+// カーネルから'offset'の'count'バイトを物理アドレス'pa'に読み込む。
+// 要求以上にコピーする場合がある。
 void
 readseg(uchar* pa, uint count, uint offset)
 {
@@ -82,15 +82,15 @@ readseg(uchar* pa, uint count, uint offset)
 
   epa = pa + count;
 
-  // Round down to sector boundary.
+  // セクタ境界に切り捨てる。
   pa -= offset % SECTSIZE;
 
-  // Translate from bytes to sectors; kernel starts at sector 1.
+  // バイトをセクタに変換する; カーネルはセクタ1から始まる。
   offset = (offset / SECTSIZE) + 1;
 
-  // If this is too slow, we could read lots of sectors at a time.
-  // We'd write more to memory than asked, but it doesn't matter --
-  // we load in increasing order.
+  // これが遅すぎる場合は、一度のもっと多くのセクタを読み込めるかもしれない。
+  // 要求以上にメモリに書き込む場合があるが、昇順でロードするので、
+  // 問題はない。
   for(; pa < epa; pa += SECTSIZE, offset++)
     readsect(pa, offset);
 }
