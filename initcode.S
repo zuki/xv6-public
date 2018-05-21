@@ -1,5 +1,5 @@
-# Initial process execs /init.
-# This code runs in user space.
+# 最初のプロセスの実行 /init.
+# このコードはユーザ空間で実行する。
 
 #include "syscall.h"
 #include "traps.h"
@@ -10,7 +10,7 @@
 start:
   pushl $argv
   pushl $init
-  pushl $0  // where caller pc would be
+  pushl $0  // 呼び出し側のpcはここになる
   movl $SYS_exec, %eax
   int $T_SYSCALL
 
@@ -29,4 +29,3 @@ init:
 argv:
   .long init
   .long 0
-
