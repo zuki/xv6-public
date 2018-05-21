@@ -2,9 +2,8 @@
 #
 #   void swtch(struct context **old, struct context *new);
 #
-# カレントレジスタをスタック上に保存し、context構造体を作成して、
-# そのアドレスを*oldに保存する。
-# スタックをnewに切り替え、前回保存したレジスタをポップする。
+# カレントレジスタコンテキストをoldに保存し、
+# fromからレジスタコンテキストをロードする。
 
 .globl swtch
 swtch:
