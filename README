@@ -1,49 +1,49 @@
-xv6 is a re-implementation of Dennis Ritchie's and Ken Thompson's Unix
-Version 6 (v6).  xv6 loosely follows the structure and style of v6,
-but is implemented for a modern x86-based multiprocessor using ANSI C.
+xv6は、Dennis RitchieとKen ThompsonのUnix Version 6（v6）の再実装である。
+xv6は、大まかにはv6の構造とスタイルに従っているが、ANSI Cを使用して、最新
+のx86ベースのマルチプロセッサ向けに実装されている。
 
-ACKNOWLEDGMENTS
+謝辞
 
-xv6 is inspired by John Lions's Commentary on UNIX 6th Edition (Peer
-to Peer Communications; ISBN: 1-57398-013-7; 1st edition (June 14,
-2000)). See also http://pdos.csail.mit.edu/6.828/2016/xv6.html, which
-provides pointers to on-line resources for v6.
+xv6は、John LionsのUNIX 6th Commentary（Peer to Peer Communications;
+ISBN：1-57398-013-7; 1st edition (June 14、2000)）に触発されたものである。
+http://pdos.csail.mit.edu/6.828/2016/xv6.htmlも参照されたい。これは、v6に
+関するオンラインリソースをまとめたものである。
 
-xv6 borrows code from the following sources:
+xv6は次のソースからコードを拝借している:
     JOS (asm.h, elf.h, mmu.h, bootasm.S, ide.c, console.c, and others)
     Plan 9 (entryother.S, mp.h, mp.c, lapic.c)
     FreeBSD (ioapic.c)
     NetBSD (console.c)
 
-The following people have made contributions: Russ Cox (context switching,
-locking), Cliff Frey (MP), Xiao Yu (MP), Nickolai Zeldovich, and Austin
-Clements.
+次の方々に感謝いたします: Russ Cox（コンテキストスイッチ、ロック）、
+Cliff Frey (MP)、Xiao Yu (MP)、Nickolai Zeldovich、Austin Clements.
 
-We are also grateful for the bug reports and patches contributed by Silas
-Boyd-Wickizer, Anton Burtsev, Cody Cutler, Mike CAT, Tej Chajed, Nelson Elhage,
-Saar Ettinger, Alice Ferrazzi, Nathaniel Filardo, Peter Froehlich, Yakir Goaron,
-Shivam Handa, Bryan Henry, Jim Huang, Alexander Kapshuk, Anders Kaseorg,
-kehao95, Wolfgang Keller, Eddie Kohler, Austin Liew, Imbar Marinescu, Yandong
-Mao, Hitoshi Mitake, Carmi Merimovich, Joel Nider, Greg Price, Ayan Shafqat,
-Eldar Sehayek, Yongming Shen, Cam Tenny, Rafael Ubal, Warren Toomey, Stephen Tu,
-Pablo Ventura, Xi Wang, Keiichi Watanabe, Nicolas Wolovick, Grant Wu, Jindong
-Zhang, Icenowy Zheng, and Zou Chang Wei.
+バグの報告とパッチをいただいた次の方々にも感謝いたします: Silas
+Boyd-Wickizer, Anton Burtsev, Cody Cutler, Mike CAT, Tej Chajed, Nelson
+Elhage, Saar Ettinger, Alice Ferrazzi, Nathaniel Filardo, Peter Froehlich,
+Yakir Goaron, Shivam Handa, Bryan Henry, Jim Huang, Alexander Kapshuk,
+Anders Kaseorg, kehao95, Wolfgang Keller, Eddie Kohler, Austin Liew,
+Imbar Marinescu, Yandong Mao, Hitoshi Mitake, Carmi Merimovich, Joel Nider,
+Greg Price, Ayan Shafqat, Eldar Sehayek, Yongming Shen, Cam Tenny,
+Rafael Ubal, Warren Toomey, Stephen Tu, Pablo Ventura, Xi Wang, Keiichi
+Watanabe, Nicolas Wolovick, Grant Wu, Jindong Zhang, Icenowy Zheng,
+Zou Chang Wei.
 
-The code in the files that constitute xv6 is
+xv6を構成するファイルのコードの著作権表示は次のとおりである。
 Copyright 2006-2016 Frans Kaashoek, Robert Morris, and Russ Cox.
 
-ERROR REPORTS
+エラー報告
 
-Please send errors and suggestions to Frans Kaashoek and Robert Morris
-(kaashoek,rtm@mit.edu). The main purpose of xv6 is as a teaching
-operating system for MIT's 6.828, so we are more interested in
-simplifications and clarifications than new features.
+エラーや提案をFrans KaashoekとRobert Morris（kaashoek、rtm @ mit.edu）に
+送ってください。xv6の主たる目的は、MITの講義科目6.828のための教育用
+オペレーティングシステムであるため、新しい機能よりも単純化と明確化の方に
+関心がある。
 
-BUILDING AND RUNNING XV6
+XV6のビルドと実行
 
-To build xv6 on an x86 ELF machine (like Linux or FreeBSD), run
-"make". On non-x86 or non-ELF machines (like OS X, even on x86), you
-will need to install a cross-compiler gcc suite capable of producing
-x86 ELF binaries. See http://pdos.csail.mit.edu/6.828/2016/tools.html.
-Then run "make TOOLPREFIX=i386-jos-elf-". Now install the QEMU PC
-simulator and run "make qemu".
+xv6をx86 ELFマシン（LinuxやFreeBSDなど）でビルドするには、"make"を実行する。
+非x86マシンあるいは（たとえx86でもOS Xなどの）ELF以外のマシンでは、x86 ELF
+バイナリを生成できるクロスコンパイラgccスイートをインストールする必要がある。
+http://pdos.csail.mit.edu/6.828/2016/tools.htmlを参照されたい。
+インストール後、 "make TOOLPREFIX = i386-jos-elf-"を実行する。 そして、
+QEMU PCシミュレータをインストールし、"make qemu"を実行する。

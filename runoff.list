@@ -1,4 +1,4 @@
-# basic headers
+# ヘッダ
 types.h
 param.h
 memlayout.h
@@ -8,23 +8,23 @@ asm.h
 mmu.h
 elf.h
 
-# entering xv6
+# xv6の起動
 entry.S
 entryother.S
 main.c
 
-# locks
+# ロック
 spinlock.h
 spinlock.c
 
-# processes
+# プロセス
 vm.c
 proc.h
 proc.c
 swtch.S
 kalloc.c
 
-# system calls
+# System Call
 traps.h
 vectors.pl
 trapasm.S
@@ -33,7 +33,7 @@ syscall.h
 syscall.c
 sysproc.c
 
-# file system
+# File System
 buf.h
 sleeplock.h
 fcntl.h
@@ -49,13 +49,13 @@ file.c
 sysfile.c
 exec.c
 
-# pipes
+# パイプ
 pipe.c
 
-# string operations
+# 文字列操作
 string.c
 
-# low-level hardware
+# 低レベルハードウェア
 mp.h
 mp.c
 lapic.c
@@ -65,13 +65,12 @@ kbd.c
 console.c
 uart.c
 
-# user-level
+# ユーザレベル
 initcode.S
 usys.S
 init.c
 sh.c
 
-# bootloader
+# ブートローダ
 bootasm.S
 bootmain.c
-

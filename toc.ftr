@@ -1,13 +1,13 @@
 
 
-The source listing is preceded by a cross-reference that lists every defined 
-constant, struct, global variable, and function in xv6.  Each entry gives,
-on the same line as the name, the line number (or, in a few cases, numbers)
-where the name is defined.  Successive lines in an entry list the line
-numbers where the name is used.  For example, this entry:
+ソースリストの前には、xv6で定義されているすべての定数、構造体、グローバル
+変数、関数の相互参照表がある。各エントリには、名前とその名前が定義されて
+いる行番号（複数の行番号がある場合もある）が同じ行に示されている。エントリ
+リストの2行目以下は、その名前が使用されている行数をリストしている。
+たとえば、次のエントリは
 
     swtch 2658
         0374 2428 2466 2657 2658
 
-indicates that swtch is defined on line 2658 and is mentioned on five lines
-on sheets 03, 24, and 26.
+swtchは2658行で定義されており、シート03と24, 26の5つの行で使用されている
+ことを示している。
