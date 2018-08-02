@@ -2,9 +2,9 @@
 #include "memlayout.h"
 #include "mmu.h"
 
-# 非ブートCPU（"AP"）はブートCPUのSTARTUP IPIに反応して開始される。
+# 非ブートCPU（"AP"）はブートCPUからのSTARTUP IPIに反応して開始される。
 # "Multi-Processor Specification"のB.4.2節によると、
-# APは、CS:IPにXY00:0000をセットしてリアルモードで開始される。
+# APは、CS:IPにXY00:0000がセットされたリアルモードで開始する。
 # ここで、XYはSTARTUPで送信される8ビットの値である。
 # したがって、このコードは4096バイト境界から開始しなければならない。
 #
@@ -13,7 +13,7 @@
 #
 # (main.cの）startothersは一度に1つSTARTUPを送信する。
 # startothersはこのコード(start)を0x7000にコピーし、
-# 新規にコアごとに割り当てられるスタックのアドレスを(start-4)に、
+# コアごとに新規に割り当てられるスタックのアドレスを(start-4)に、
 # ジャンプ先のアドレス(mpenter)を(start-8)に、
 # entrypgdirの物理アドレスを(start-12)に置く。
 #
@@ -31,16 +31,16 @@ start:
   movw    %ax,%ss
 
   # リアルモードからプロテクトモードに切り替える。切り替えの際に
-  # 実効メモリマップが変わらないように、仮想アドレスを
-  # 直接物理アドレスにマップするブートストラップGDTを使用する。e
+  # 実効メモリマップが変わらないように、仮想アドレスをそのまま
+  # 物理アドレスにマッピングするブートストラップGDTを使用する。
   lgdt    gdtdesc
   movl    %cr0, %eax
   orl     $CR0_PE, %eax
   movl    %eax, %cr0
 
-  # ロングジャンプして%csと%eipを再ロードし、32ビットプロテクト
-  # モードへの移行を完了させる。セグメントディスクリプタは移行しないので
-  # マッピングは依然として恒等マッピングである。
+  # %csと%eipを再ロードするためのロングジャンプを利用して、32ビット
+  # プロテクトモードへの移行を完了させる。セグメントディスクリプタは
+  # 無変換に設定されているので、マッピングは依然として恒等マッピングである。
   ljmpl    $(SEG_KCODE<<3), $(start32)
 
 //PAGEBREAK!
@@ -55,11 +55,11 @@ start32:
   movw    %ax, %fs                # -> FS
   movw    %ax, %gs                # -> GS
 
-  # ページ単位が4MBになるようにページサイズ拡張をセットする
+  # ページサイズが4MBになるようにPSE(ページサイズ拡張)ビットをセットする
   movl    %cr4, %eax
   orl     $(CR4_PSE), %eax
   movl    %eax, %cr4
-  # 最初のページテーブルとしてentrypgdirを使用する
+  # 初期ページテーブルとしてentrypgdirを使用する
   movl    (start-12), %eax
   movl    %eax, %cr3
   # ページングを有効にする
@@ -67,7 +67,7 @@ start32:
   orl     $(CR0_PE|CR0_PG|CR0_WP), %eax
   movl    %eax, %cr0
 
-  # startothers()により割り当てられたスタックに切り替える
+  # startothers()で割り当てられたスタックに切り替える
   movl    (start-4), %esp
   # mpenter()を呼び出す
   call	 *(start-8)

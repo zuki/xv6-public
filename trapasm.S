@@ -1,6 +1,6 @@
 #include "mmu.h"
 
-  # vectors.S はすべてのトラップをここに送信する。
+  # vectors.S はすべてのトラップをここに送る。
 .globl alltraps
 alltraps:
   # トラップフレームを構築する。
@@ -20,7 +20,7 @@ alltraps:
   call trap
   addl $4, %esp
 
-  # 復帰はtrapretへ向けられる...
+  # 復帰はtrapretにフォールスルーする...
 .globl trapret
 trapret:
   popal

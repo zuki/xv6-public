@@ -48,7 +48,7 @@ memmove(void *dst, const void *src, uint n)
   return dst;
 }
 
-// memcpyはGCCをなだめるために存在する。memmoveを使用されたい。
+// memcpyはGCCをなだめるために存在する。memmoveを使用すること。
 void*
 memcpy(void *dst, const void *src, uint n)
 {

@@ -1,11 +1,11 @@
-// ファイルシステムの実装.  ５つの層:
-//   + ブロック: 生のディスクブロックのアロケータ
-//   + ログ: 複数ステップによる更新のクラッシュリカバリ
-//   + ファイル: inodeアロケータ、読み、書き、メタデータ
-//   + ディレクトリ: 特別なコンテンツ（他のinodeのリスト）を持つinode
-//   + 名前: 便利な命名方法としての /usr/rtm/xv6/fs.c のようなパス
+// ファイルシステムの実装.  5階層:
+//   + ブロック: 生ディスクブロックのアロケータ
+//   + ログ: 多段階更新のクラッシュリカバリ
+//   + ファイル: inodeアロケータ、読み取り、書き込み、メタデータ
+//   + ディレクトリ: 特別なコンテンツ（inodeのリスト）を持つinode
+//   + 名前: 便利な命名法である /usr/rtm/xv6/fs.c のようなパス
 //
-// このファイルは低レベルのファイルシステム操作ルーチンを含んでいる。
+// このファイルには低レベルのファイルシステム操作関数が含まれている。
 // （高レベルの）システムコールの実装はsysfile.cにある。
 
 #include "types.h"
@@ -22,8 +22,8 @@
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 static void itrunc(struct inode*);
-// ディスクデバイスごとに１つスーパーブロックが必要であるが、このOSで使えるデバイスは
-// 1つだけ。
+// ディスク装置ごとに１つスーパーブロックが必要であるが、このOSでは１つしかデバイスを
+// 使わない。
 struct superblock sb;
 
 // スーパーブロックを読み込む
@@ -51,7 +51,7 @@ bzero(int dev, int bno)
 
 // ブロック
 
-// ディスクブロックを割り当てて0クリア
+// ディスクブロックを割り当てて0クリア（ブロック番号を返す）
 static uint
 balloc(uint dev)
 {
@@ -63,7 +63,7 @@ balloc(uint dev)
     bp = bread(dev, BBLOCK(b, sb));
     for(bi = 0; bi < BPB && b + bi < sb.size; bi++){
       m = 1 << (bi % 8);
-      if((bp->data[bi/8] & m) == 0){  // ブロックは空き?
+      if((bp->data[bi/8] & m) == 0){  // このブロックは空いているか
         bp->data[bi/8] |= m;  // ブロックに使用中のマークを付ける。
         log_write(bp);
         brelse(bp);
@@ -94,44 +94,44 @@ bfree(int dev, uint b)
   brelse(bp);
 }
 
-// Inode.
+// inode。
 //
-// inodeは名前のない１つのファイルを記述する。
-// inodeディスク構造体はメタデータ（ファイル種別、
-// サイズ、自身を参照しているリンクの数、ファイルコンテンツを保持している
-// ブロックのリスト）を保持する。
+// inodeは無名のファイルを一つ記述する。
+// inodeディスク構造体はメタデータ（ファイル種別、サイズ、
+// 自身を参照しているリンクの数、ファイルコンテンツを保持
+// しているブロックのリスト）を保持する。
 //
-// inodeはディスク上にsb.startinodeから連続的に配置されている。
-// 各inodeはディスク上の位置を示す番号を
-// 持っている。
+// inodeはディスク上のsb.startinodeから連続的に
+// 配置されている。各inodeは番号を持っており、
+// これはディスク上の位置を示している。
 //
 // カーネルは使用中のinodeのキャシュをメモリ上に保持しており、
-// これにより複数プロセスの使用によるinodeへの同期的アクセスを
-// 実現している。キャッシュされたinodeには、ディスクには保管されない
-// 記帳情報(book-keeping information): ip->refとip->valid
-// が含まれている。
+// これにより複数のプロセスが使用するinodeへの同期的アクセスを
+// 実現している。キャッシュされたinodeには、ディスクには保存されない
+// 記帳情報(book-keeping information)であるip->refとip->validが
+// 含まれている。
 //
-// inodeとそのインメモリコピーは、他のファイルシステムコードで
-// 使用可能になるまでに、次のように状態が変遷する。
+// inodeとそのインメモリコピーは、ファイルシステムのその他のコードが
+// 使用できるようになるまでに、次のように状態が変遷する。
 //
-// * Allocation(割当): inodeはその（ディスク上の）種別が0でない場合、
-//   割当が行われる。
-//   ialloc()が割当を行い、参照とリンクカウントが0になった場合に
-//   iput()が解放する。
+// * Allocation(割り当て): inodeはその（ディスク上の）種別が
+//   0でない場合、割り当てが行われる。
+//   ialloc()は割り当てを行い、iput()は参照とリンクのカウントが0に
+//   なったら、解放する。
 //
 // * Referencing in cache(キャッシュ内で参照中): inodeキャッシュのエントリは
 //   ip->refが0になると解放される。そうでない場合、ip->refは
 //   そのエントリ（オープンファイルとカレントディレクトリ）への
 //   インメモリポインタの数を監視する。
 //   iget()は、キャッシュエントリの検出または作成を行い、
-//   そのrefをインクリメントする。iput()はrefをデクリメントする。
+//   refをインクリメントする。iput()はrefをデクリメントする。
 //
-// * Valid(有効): inodeキャッシュエントリの情報（種別、サイズ、&c）は
+// * Valid(有効): inodeキャッシュエントリの情報（種別、サイズなど）は
 //   ip->validが1の時にのみ、正しいものである。
 //   ilock()はinodeをディスクから読み込み、ip->validをセットする。
 //   iput()はip->refが0になった時に、ip->validをクリアする。
 //
-// * Locked(ロック): ファイルシステムコードは、まずinodeをロックした
+// * Locked(ロック): ファイルシステムのコードは、inodeを最初にロックした
 //   場合にのみ、icode内の情報やそのコンテンツを調べたり、変更したり
 //   することができる。
 //
@@ -142,26 +142,26 @@ bfree(int dev, uint b)
 //   iunlock(ip)
 //   iput(ip)
 //
-// ilock()とiget()から分離されているため、システムコールはinodeへの長期参照を得る
-// （ファイルのオープンなど）ことができ、一方、（read()のように）短期間のみ
-// inodeをロックすることもできる。
+// ilock()とiget()が分離されているため、システムコールはinodeへの
+// 長期的な参照を得る（ファイルのオープンなど）ことができる一方で、
+// （read()のように）inodeの短期的なロックのみをすることもできる。
 // この分離はパス名検索の際のデッドロックや競合の防止にも役立っている。
-// iget()はip->refをインクリメントので、
-// inodeはキャッシュに留まり、inodeを指すポイントが引き続き有効と
-// なる。
+//
+// iget()はip->refをインクリメントするので、inodeはキャッシュに留まり、
+// inodeを指すポイントが引き続き有効となる。
 //
 // 内部ファイルシステム関数の多くは、使用するinodeが呼び出し側(caller)で
-// ロックされていることを想定している。これは呼び出し側が複数ステップの
-// アトミック操作を作成するよう仕向けるためである。
+// ロックされていることを想定している。これは呼び出し側に多段階アトミック
+// 操作を作成するよう仕向けるためである。
 //
-// icache.lockスピンロックはicacheエントリの割当を保護する。
-// ip->refはエントリが空いているか否かを、ip->devとip->inumは
-// エントリがどのinodeを保持しているかを示すので、これらのフィールドの
-// いずれかを使用する際は、icache.lockを保持する必要がある。
+// icache.lockスピンロックはicacheエントリの割り当てを保護する。
+// ip->refはエントリが空きであるか否かを、ip->devとip->inumは
+// エントリがどのinodeを保持しているかを示すので、これらフィールドの
+// いずれかを使用する際は、icache.lockを取得する必要がある。
 //
-// ip->lockスリープロックは、ip->のref, dev, inum以外のすべての
+// ip->lockスリープロックは、inode構造体のref, dev, inum以外のすべての
 // フィールドを保護する。inodeのip->valid, ip->size, ip->type
-// などの読み書きをするには、ip->lockを保持する必要がある。
+// などの読み書きをする際は、ip->lockを取得する必要がある。
 
 struct {
   struct spinlock lock;
@@ -188,9 +188,9 @@ iinit(int dev)
 static struct inode* iget(uint dev, uint inum);
 
 //PAGEBREAK!
-// デバイス devにinodeを割り当てる。
-// 指定されたタイプ typeのinodeであるとマーク付ける。
-// ロックされていない、割り当て済みで参照済みのinodeを返す。
+// デバイスdevにinodeを割り当てる。
+// inodeの種別をtypeとし、割り当て済みのマークを付ける。
+// 未ロックだが割り当て済みかつ参照済みのinodeを返す。
 struct inode*
 ialloc(uint dev, short type)
 {
@@ -201,10 +201,10 @@ ialloc(uint dev, short type)
   for(inum = 1; inum < sb.ninodes; inum++){
     bp = bread(dev, IBLOCK(inum, sb));
     dip = (struct dinode*)bp->data + inum%IPB;
-    if(dip->type == 0){  // a free inode
+    if(dip->type == 0){  // 空きinode
       memset(dip, 0, sizeof(*dip));
       dip->type = type;
-      log_write(bp);   // デスクに割り当て済みであるとマーク付ける
+      log_write(bp);   // デスクに割り当て済みのマークを付ける
       brelse(bp);
       return iget(dev, inum);
     }
@@ -215,7 +215,7 @@ ialloc(uint dev, short type)
 
 // 変更したインメモリinodeをディスクにコピーする。
 // inodeキャッシュはライトスルーなので、ディスクに存在するinodeの
-// ip->xxxのフィールドを変更する度によびだされなければならない。
+// 任意のip->xxxフィールドを変更した後に呼び出す必要がある。
 // 呼び出し側はip->lockを保持しなければならない。
 void
 iupdate(struct inode *ip)
@@ -235,9 +235,9 @@ iupdate(struct inode *ip)
   brelse(bp);
 }
 
-// デバイス devでinode番号 inumを持つinodeを探し、
+// デバイスdev上でinode番号inumを持つinodeを探し、
 // そのインメモリコピーを返す。inodeはロックせず、
-// ディスクから読み込みもしない。
+// ディスクからの読み込みもしない。
 static struct inode*
 iget(uint dev, uint inum)
 {
@@ -322,12 +322,12 @@ iunlock(struct inode *ip)
 }
 
 // インメモリinodeへの参照をデクリメントする。
-// それが最後の参照だった場合は、inodeキャッシュエントリが
+// それが最後の参照だった場合、そのinodeキャッシュエントリは
 // リサイクル可能になる。
-// それが最後の参照で、それへのリンクがない場合は、ディスク上のinode（とその
-// コンテンツ）を解放する。
-// inodeを解放する必要がある場合に備えて、iput()の呼び出しはすべて
-// トランザクションの内側で行われなければならない。
+// それが最後の参照で、そのinodeへのリンクがない場合、
+// ディスク上のinode（とそのコンテンツ）を解放する。
+// inodeを解放する場合に備えて、iput()の呼び出しは常に
+// トランザクション内でなければならない。
 void
 iput(struct inode *ip)
 {
@@ -362,9 +362,9 @@ iunlockput(struct inode *ip)
 //PAGEBREAK!
 // inodeのコンテンツ
 //
-// 各inodeに関係するコンテンツ（データ）はディスクのブロックに
+// 各inodeに関連するコンテンツ（データ）はディスクのブロックに
 // 格納される。最初のNDIRECT個のブロック番号は
-// ip->addrs[]に記録される。次のNINDIRECTこのブロックは
+// ip->addrs[]に記録される。次のNINDIRECT個のブロックは
 // ip->addrs[NDIRECT]のブロックに記録される。.
 
 // inode ipのn番目のブロックのディスクブロックアドレスを返す。
@@ -383,7 +383,7 @@ bmap(struct inode *ip, uint bn)
   bn -= NDIRECT;
 
   if(bn < NINDIRECT){
-    // 間接ブロックを、必要なら割り当てて、ロードする。
+    // 間接ブロックをロードする。必要であれば割り当てる。
     if((addr = ip->addrs[NDIRECT]) == 0)
       ip->addrs[NDIRECT] = addr = balloc(ip->dev);
     bp = bread(ip->dev, addr);
@@ -403,7 +403,7 @@ bmap(struct inode *ip, uint bn)
 // そのinodeへのリンクがなく（参照するディレクトリ
 // エントリがない）、かつ、そのinodeへのインメモリ参照が
 // ない（オープンされたファイルでないか、カレントディレクトリ
-// でない）場合にのみ呼び出される
+// でない）場合にのみ呼び出される。
 static void
 itrunc(struct inode *ip)
 {
@@ -435,7 +435,7 @@ itrunc(struct inode *ip)
 }
 
 // inodeからstat情報をコピーする。
-// 呼び出し側でip->lockを保持しなければならない。
+// 呼び出し側でip->lockを取得しなければならない。
 void
 stati(struct inode *ip, struct stat *st)
 {
@@ -448,7 +448,7 @@ stati(struct inode *ip, struct stat *st)
 
 //PAGEBREAK!
 // inodeからデータを読み込む。
-// 呼び出し側でip->lockを保持しなければならない。
+// 呼び出し側でip->lockを取得しなければならない。
 int
 readi(struct inode *ip, char *dst, uint off, uint n)
 {
@@ -477,7 +477,7 @@ readi(struct inode *ip, char *dst, uint off, uint n)
 
 // PAGEBREAK!
 // データをinodeに書き込む。
-// 呼び出し側でip->lockを保持しなければならない。
+// 呼び出し側でip->lockを取得しなければならない。
 int
 writei(struct inode *ip, char *src, uint off, uint n)
 {
@@ -519,7 +519,7 @@ namecmp(const char *s, const char *t)
   return strncmp(s, t, DIRSIZ);
 }
 
-// ディレクトリ中のディレクトリエントリを検索する。
+// ディレクトリでディレクトリエントリを検索する。
 // 見つかった場合、エントリのバイトオフセットを *poff に設定する。
 struct inode*
 dirlookup(struct inode *dp, char *name, uint *poff)
@@ -527,7 +527,7 @@ dirlookup(struct inode *dp, char *name, uint *poff)
   uint off, inum;
   struct dirent de;
 
-  if(dp->type != T_DIR)          // dpがディレクトリでない場合はエラー
+  if(dp->type != T_DIR)          // dpがディレクトリでない
     panic("dirlookup not DIR");
 
   for(off = 0; off < dp->size; off += sizeof(de)){
@@ -556,8 +556,8 @@ dirlink(struct inode *dp, char *name, uint inum)
   struct inode *ip;
 
   // 名前が存在しないかチェックする。
-  if((ip = dirlookup(dp, name, 0)) != 0){
-    iput(ip);
+  if((ip = dirlookup(dp, name, 0)) != 0){  // 存在した
+    iput(ip);                              // dirlookupでref++しているのでref--
     return -1;
   }
 
@@ -582,8 +582,8 @@ dirlink(struct inode *dp, char *name, uint inum)
 
 // pathから次のパス要素をnameにコピーする。
 // コピーした要素の次の要素へのポインタを返す。
-// 呼び出し側がnameが最終要素であるか否かを *path=='\0' で
-// チェックできるように、返されるパスには先頭にスラッシュを付けない。
+// 呼び出し側が *path=='\0' をチェックして、nameが最終要素であるか
+// 否かを判断できるように、返されるパスには先頭にスラッシュを付けない。
 // 取り除く名前がなかった場合は、0 を返す。
 //
 // 例:

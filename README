@@ -1,16 +1,16 @@
 xv6は、Dennis RitchieとKen ThompsonのUnix Version 6（v6）の再実装である。
-xv6は、大まかにはv6の構造とスタイルに従っているが、ANSI Cを使用して、最新
-のx86ベースのマルチプロセッサ向けに実装されている。
+xv6は、おおよそv6の構造とスタイルに従っているが、ANSI Cを使用し、最新の
+x86ベースのマルチプロセッサ向けに実装されている。
 
 謝辞
 
 xv6は、John LionsのUNIX 6th Commentary（Peer to Peer Communications;
 ISBN：1-57398-013-7; 1st edition (June 14、2000)）に触発されたものである。
-http://pdos.csail.mit.edu/6.828/2016/xv6.htmlも参照されたい。これは、v6に
-関するオンラインリソースをまとめたものである。
+http://pdos.csail.mit.edu/6.828/2016/xv6.htmlも参照されたい。これには、
+v6に関するオンラインリソースをまとめられている。
 
 xv6は次のソースからコードを拝借している:
-    JOS (asm.h, elf.h, mmu.h, bootasm.S, ide.c, console.c, and others)
+    JOS (asm.h, elf.h, mmu.h, bootasm.S, ide.c, console.c, など)
     Plan 9 (entryother.S, mp.h, mp.c, lapic.c)
     FreeBSD (ioapic.c)
     NetBSD (console.c)
@@ -36,8 +36,8 @@ Copyright 2006-2016 Frans Kaashoek, Robert Morris, and Russ Cox.
 
 エラーや提案をFrans KaashoekとRobert Morris（kaashoek、rtm @ mit.edu）に
 送ってください。xv6の主たる目的は、MITの講義科目6.828のための教育用
-オペレーティングシステムであるため、新しい機能よりも単純化と明確化の方に
-関心がある。
+オペレーティングシステムである。そのため、我々は新しい機能よりも単純化と
+明確化に関心がある。
 
 XV6のビルドと実行
 
@@ -45,5 +45,5 @@ xv6をx86 ELFマシン（LinuxやFreeBSDなど）でビルドするには、"mak
 非x86マシンあるいは（たとえx86でもOS Xなどの）ELF以外のマシンでは、x86 ELF
 バイナリを生成できるクロスコンパイラgccスイートをインストールする必要がある。
 http://pdos.csail.mit.edu/6.828/2016/tools.htmlを参照されたい。
-インストール後、 "make TOOLPREFIX = i386-jos-elf-"を実行する。 そして、
+インストール後、 "make TOOLPREFIX=i386-jos-elf-"を実行する。 そして、
 QEMU PCシミュレータをインストールし、"make qemu"を実行する。

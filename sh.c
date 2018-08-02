@@ -4,7 +4,7 @@
 #include "user.h"
 #include "fcntl.h"
 
-// パースし後のコマンド表現
+// パース後のコマンド表現
 #define EXEC  1
 #define REDIR 2
 #define PIPE  3
@@ -19,8 +19,8 @@ struct cmd {
 
 struct execcmd {
   int type;
-  char *argv[MAXARGS];
-  char *eargv[MAXARGS];
+  char *argv[MAXARGS];    // 引数文字列の先頭ポインタ
+  char *eargv[MAXARGS];   // 引数文字列の末尾の次のポインタ
 };
 
 struct redircmd {
@@ -269,7 +269,7 @@ gettoken(char **ps, char *es, char **q, char **eq)
   int ret;
 
   s = *ps;
-  while(s < es && strchr(whitespace, *s))
+  while(s < es && strchr(whitespace, *s))  // ホワイトスペースを読み飛ばす
     s++;
   if(q)
     *q = s;
@@ -287,13 +287,13 @@ gettoken(char **ps, char *es, char **q, char **eq)
     break;
   case '>':
     s++;
-    if(*s == '>'){
+    if(*s == '>'){   //  >> : 追加モード
       ret = '+';
       s++;
     }
     break;
   default:
-    ret = 'a';
+    ret = 'a';       // ホワイトスペースでもシンボルでもない文字を読み飛ばす
     while(s < es && !strchr(whitespace, *s) && !strchr(symbols, *s))
       s++;
     break;
@@ -301,10 +301,10 @@ gettoken(char **ps, char *es, char **q, char **eq)
   if(eq)
     *eq = s;
 
-  while(s < es && strchr(whitespace, *s))
+  while(s < es && strchr(whitespace, *s))  // ホワイトスペースを読み飛ばす
     s++;
   *ps = s;
-  return ret;
+  return ret;  // シンボルは自身（">>"は'+'）, 文字は"a"を返す。*psは次の有効文字を指す
 }
 
 int
@@ -313,10 +313,10 @@ peek(char **ps, char *es, char *toks)
   char *s;
 
   s = *ps;
-  while(s < es && strchr(whitespace, *s))
+  while(s < es && strchr(whitespace, *s))  // ホワイトスペースを読み飛ばす
     s++;
   *ps = s;
-  return *s && strchr(toks, *s);
+  return *s && strchr(toks, *s);           // 先頭文字がtoksか？
 }
 
 struct cmd *parseline(char**, char*);
@@ -327,7 +327,7 @@ struct cmd *nulterminate(struct cmd*);
 struct cmd*
 parsecmd(char *s)
 {
-  char *es;
+  char *es;             // s + strlen(s): 処理の終了判定に使用
   struct cmd *cmd;
 
   es = s + strlen(s);
@@ -345,13 +345,13 @@ struct cmd*
 parseline(char **ps, char *es)
 {
   struct cmd *cmd;
-
-  cmd = parsepipe(ps, es);
-  while(peek(ps, es, "&")){
-    gettoken(ps, es, 0, 0);
-    cmd = backcmd(cmd);
-  }
-  if(peek(ps, es, ";")){
+                            // PIPE, BACK, LISTを処理する
+  cmd = parsepipe(ps, es);  // コマンドをパースして
+  while(peek(ps, es, "&")){ // 次の文字が"&"ならバックグラウンド処理
+    gettoken(ps, es, 0, 0); // ポインタを進めて
+    cmd = backcmd(cmd);     // backcmdを作成
+  }                         // "&&"コマンドの処理がこれではおかしいが想定外? だとしたらなぜwhile?
+  if(peek(ps, es, ";")){    // 次の文字が";"ならコマンドの連速実行(listcmd)
     gettoken(ps, es, 0, 0);
     cmd = listcmd(cmd, parseline(ps, es));
   }
@@ -363,10 +363,10 @@ parsepipe(char **ps, char *es)
 {
   struct cmd *cmd;
 
-  cmd = parseexec(ps, es);
-  if(peek(ps, es, "|")){
-    gettoken(ps, es, 0, 0);
-    cmd = pipecmd(cmd, parsepipe(ps, es));
+  cmd = parseexec(ps, es);   // パイプの左側のコマンドを取得
+  if(peek(ps, es, "|")){     // 次の文字が"|"の場合はパイプライン
+    gettoken(ps, es, 0, 0);  // 返り値は"|"だが無視して、ポインタを進める
+    cmd = pipecmd(cmd, parsepipe(ps, es));  // パイプの右側をパースしてpipecmdを作成
   }
   return cmd;
 }
@@ -376,10 +376,10 @@ parseredirs(struct cmd *cmd, char **ps, char *es)
 {
   int tok;
   char *q, *eq;
-
+  // *psが<>の場合のみ処理、それ以外はcmdをそのまま返す
   while(peek(ps, es, "<>")){
-    tok = gettoken(ps, es, 0, 0);
-    if(gettoken(ps, es, &q, &eq) != 'a')
+    tok = gettoken(ps, es, 0, 0);          // tok = [<, >、+]
+    if(gettoken(ps, es, &q, &eq) != 'a')   // q = このtokenの先頭、eq = このtokenの最後
       panic("missing file for redirection");
     switch(tok){
     case '<':
@@ -388,7 +388,7 @@ parseredirs(struct cmd *cmd, char **ps, char *es)
     case '>':
       cmd = redircmd(cmd, q, eq, O_WRONLY|O_CREATE, 1);
       break;
-    case '+':  // >>
+    case '+':  // >>             これでは追加にならないのでは。O_CREATEは不要?
       cmd = redircmd(cmd, q, eq, O_WRONLY|O_CREATE, 1);
       break;
     }
@@ -404,11 +404,11 @@ parseblock(char **ps, char *es)
   if(!peek(ps, es, "("))
     panic("parseblock");
   gettoken(ps, es, 0, 0);
-  cmd = parseline(ps, es);
+  cmd = parseline(ps, es);         // ( EXEC|PIPE|LIST|BACK )
   if(!peek(ps, es, ")"))
     panic("syntax - missing )");
   gettoken(ps, es, 0, 0);
-  cmd = parseredirs(cmd, ps, es);
+  cmd = parseredirs(cmd, ps, es); // ( EXEC|PIPE|LIST|BACK ) <>> ファイル
   return cmd;
 }
 
@@ -420,7 +420,7 @@ parseexec(char **ps, char *es)
   struct execcmd *cmd;
   struct cmd *ret;
 
-  if(peek(ps, es, "("))
+  if(peek(ps, es, "("))         // ホワイトスペースを覗いた先頭文字が"("
     return parseblock(ps, es);
 
   ret = execcmd();
@@ -428,7 +428,7 @@ parseexec(char **ps, char *es)
 
   argc = 0;
   ret = parseredirs(ret, ps, es);
-  while(!peek(ps, es, "|)&;")){
+  while(!peek(ps, es, "|)&;")){  // コマンド引数の取得
     if((tok=gettoken(ps, es, &q, &eq)) == 0)
       break;
     if(tok != 'a')
@@ -445,7 +445,7 @@ parseexec(char **ps, char *es)
   return ret;
 }
 
-// すべての終了文字列をヌル終端する。
+// 文字列末尾の次を表すポインタに0を代入して文字列をヌル終端
 struct cmd*
 nulterminate(struct cmd *cmd)
 {
@@ -462,14 +462,14 @@ nulterminate(struct cmd *cmd)
   switch(cmd->type){
   case EXEC:
     ecmd = (struct execcmd*)cmd;
-    for(i=0; ecmd->argv[i]; i++)
-      *ecmd->eargv[i] = 0;
+    for(i=0; ecmd->argv[i]; i++)     // 設定された引数だけ処理
+      *ecmd->eargv[i] = 0;           // 末尾+1にヌルを代入して、argv[i]をヌル終端
     break;
 
   case REDIR:
     rcmd = (struct redircmd*)cmd;
     nulterminate(rcmd->cmd);
-    *rcmd->efile = 0;
+    *rcmd->efile = 0;                // rcmd->fileをヌル終端
     break;
 
   case PIPE:

@@ -1,6 +1,6 @@
 # xv6のカーネルはこのファイルから実行を開始する。このファイルはカーネルの
 # Cコードにリンクされているので、main()などのカーネルシンボルを参照できる。
-# ブートブロック(bootasm.Sとbootmain.c)は以下のentryにジャンプする。
+# ブートブロック(bootasm.Sとbootmain.c)はこのファイルのentryにジャンプする。
 
 # マルチブートヘッダ。GUN Grubなどのマルチブート・ブートローダ用。
 # http://www.gnu.org/software/grub/manual/multiboot/multiboot.html
@@ -34,13 +34,13 @@ multiboot_header:
   .long flags
   .long (-magic-flags)
 
-# 規約により、_startシンボルはELFエントリポイントを指定する。
+# 規約により、_startシンボルにはELFエントリポイントを指定する。
 # まだ仮想メモリを設定していないので、エントリポイントは
 # 'entry'の物理アドレスである。
 .globl _start
 _start = V2P_WO(entry)
 
-# ページンはオフで、ブートプロセッサ上のxv6に入る
+# ブートプロセッサのxv6に入る。ページングは無効。
 .globl entry
 entry:
   # ページ単位が4MBになるようにページサイズ拡張をセットする
@@ -60,8 +60,8 @@ entry:
 
   # main()にジャンプして、高位アドレスの実行コードにスイッチする。
   # ここでは間接呼び出しが必要である。
-  # なぜなら、直接ジャンブをすると
-  # アセンブラはPC相対の命令を生成するからである。
+  # なぜなら、直接ジャンブにすると
+  # アセンブラがPC相対の命令を生成するからである。
   mov $main, %eax
   jmp *%eax
 

@@ -1,5 +1,5 @@
 // コンソール入出力。
-// 入力はキーボードまたはシリアルオートから。
+// 入力はキーボードまたはシリアルポートから。
 // 出力はスクリーンとシリアルポートに書き込まれる。
 
 #include "types.h"
@@ -36,21 +36,21 @@ printint(int xx, int base, int sign)
     x = -xx;
   else
     x = xx;
-
-  i = 0;
+                                    // -1234
+  i = 0;                            // buf = [4, 3, 2, 1, -]
   do{
     buf[i++] = digits[x % base];
   }while((x /= base) != 0);
 
   if(sign)
-    buf[i++] = '-';
+    buf[i++] = '-';                 // buf[4] = '-', i = 5
 
   while(--i >= 0)
-    consputc(buf[i]);
+    consputc(buf[i]);               // putc => -1234
 }
 //PAGEBREAK: 50
 
-// コンソールにプリントする。%d, %x, %pのみ理解する。
+// コンソールにプリントする。%d, %x, %p, %sのみ理解する。
 void
 cprintf(char *fmt, ...)
 {

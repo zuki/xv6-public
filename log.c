@@ -6,23 +6,23 @@
 #include "fs.h"
 #include "buf.h"
 
-// 並列のFSシステムコールを可能にするシンプルなロギング。
+// 並列FSシステムコールを可能にするシンプルなロギングシステム。
 //
-// ログトランザクションは複数のFSシステムコールの更新を含んでいる。
+// ログトランザクションには複数のFSシステムコールの更新内容が含まれている。
 // ロギングシステムはアクティブなFSシステムコールが存在しない場合にのみ
-// コミットを行う。したがって、コミットしていないシステムコールの
-// 更新をコミットがディスクに書き込む可能性があるか否かを
-// 考える必要はまったくない
+// コミットを行う。したがって、コミットによりコミットされていない
+// システムコールの更新がディスクに書き込まれないかと心配する必要は
+// まったくない。
 //
 // システムコールはその開始と終了を知らせるためにbegin_op()/end_op()を
 // 呼び出さなければならない。通常、begin_op()は実行中のFSシステムコールの
 // カウントをインクリメントしただけで復帰する。
-// しかし、ログが枯渇してクローズされると思われる場合、begin_op()は
-// 最後の未処理のend_op()がコミットされるまでスリープする。
+// ただし、ログの枯渇が近いと判断した場合、最後の未処理のend_op()が
+// コミットされるまでbegin_op()はスリープする。
 //
-// ログはディスクブロックを含む物理的なre-doログである。
+// ログはディスクブロックを含んでいる物理的なre-doログである。
 // オンディスクログフォーマットは次の通り:
-//   ヘッダブロック、ブロックA, B, C...のブロック番号を含む
+//   ヘッダブロック。ブロックA, B, C, ...のブロック番号を含んでいる
 //   ブロックA
 //   ブロックB
 //   ブロックC
@@ -40,8 +40,8 @@ struct log {
   struct spinlock lock;
   int start;
   int size;
-  int outstanding; // FSシステムコールがいくつ実行中か
-  int committing;  // commit()中なので待て
+  int outstanding; // 実行中のFSシステムコールの数
+  int committing;  // commit()中、待て
   int dev;
   struct logheader lh;
 };
@@ -116,7 +116,7 @@ static void
 recover_from_log(void)
 {
   read_head();
-  install_trans(); // コミットされたら、ログからディスクにコピーする
+  install_trans(); // コミットされていたら、ログからディスクにコピーする
   log.lh.n = 0;
   write_head(); // ログをクリア
 }
@@ -130,7 +130,7 @@ begin_op(void)
     if(log.committing){
       sleep(&log, &log.lock);
     } else if(log.lh.n + (log.outstanding+1)*MAXOPBLOCKS > LOGSIZE){
-      // このオペレーションはログスペースを使い尽くす可能性がある; コミットを待つ
+      // この操作によりログスペースが枯渇するおそれがあるので、コミットされるまで待機する。
       sleep(&log, &log.lock);
     } else {
       log.outstanding += 1;
@@ -156,14 +156,14 @@ end_op(void)
     log.committing = 1;
   } else {
     // begin_op()がログスペースが空くのを待っている可能性がある。
-    // また、log.outstandingをデクリメントしたことで予約スペースが
+    // log.outstandingをデクリメントしたことで予約スペースが
     // 減ったかもしれない。
     wakeup(&log);
   }
   release(&log.lock);
 
   if(do_commit){
-    // ルックを保持したままスリープすることは許されないので、
+    // ロックを保持したままスリープすることは許されないので、
     // ロックを獲得せずにcommitを呼び出す。
     commit();
     acquire(&log.lock);
@@ -197,15 +197,15 @@ commit()
     write_head();    // ヘッダをディスクに書き込む -- 本当のコミット
     install_trans(); // 書き込み内容を本来の場所にコピーする
     log.lh.n = 0;
-    write_head();    // トランザクションをログから消去するE
+    write_head();    // トランザクションをログから消去する
   }
 }
 
 // 呼び出し側でb->dataを変更した。それは、バッファ上で行われている。
 // ブロック番号を記録して、キャッシュのB_DIRTYフラグをたてる。
-// commit()/write_log()がディスクへの書き込みを行う。
+// いずれ、commit()/write_log()がディスクへの書き込みを行う。
 //
-// log_write()はbwrite()を置き換える; 通常の使用法は次の通り:
+// log_write()はbwrite()の代わりに使用する。通常の使用法は次の通り:
 //   bp = bread(...)
 //   modify bp->data[]
 //   log_write(bp)
@@ -222,12 +222,12 @@ log_write(struct buf *b)
 
   acquire(&log.lock);
   for (i = 0; i < log.lh.n; i++) {
-    if (log.lh.block[i] == b->blockno)   // ログ統合
+    if (log.lh.block[i] == b->blockno)   // ログの統合
       break;
   }
   log.lh.block[i] = b->blockno;
   if (i == log.lh.n)
     log.lh.n++;
-  b->flags |= B_DIRTY; // 追い立てを防ぐ
+  b->flags |= B_DIRTY; // スワップアウトを防ぐ
   release(&log.lock);
 }

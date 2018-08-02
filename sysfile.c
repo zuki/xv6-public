@@ -1,7 +1,7 @@
 //
 // ファイルシステム関連のシステムコール。
-// 殆どの関数で引数をチェックしている。ユーザのコードは信用していないし、
-// file.cとfs.cを呼び出すからである。
+// ユーザのコードは信用できないし、file.cとfs.cを呼び出すので
+// ほとんどの関数で引数をチェックする。
 //
 
 #include "types.h"
@@ -16,7 +16,7 @@
 #include "file.h"
 #include "fcntl.h"
 
-// システムコールのN番目のワードサイズの引数をファイル記述子として取り出し、
+// システムコールのn番目のワードサイズの引数をファイル記述子として取り出し、
 // その記述子と対応するfile構造体を返す。
 static int
 argfd(int n, int *pfd, struct file **pf)
@@ -35,8 +35,8 @@ argfd(int n, int *pfd, struct file **pf)
   return 0;
 }
 
-// 指定されたファイルのファイル記述子を割り当てる。
-// 成功した場合、呼び出し側からファイル参照を引き継ぐ。
+// 指定したファイルにファイル記述子を割り当てる。
+// 成功したら、呼び出し側が指定したファイル参照をファイル記述子に設定する。
 static int
 fdalloc(struct file *f)
 {
@@ -58,20 +58,20 @@ sys_dup(void)
   struct file *f;
   int fd;
 
-  if(argfd(0, 0, &f) < 0)
+  if(argfd(0, 0, &f) < 0)  // 引数1で指定されたfdに対応するファイルを取得
     return -1;
-  if((fd=fdalloc(f)) < 0)
+  if((fd=fdalloc(f)) < 0)  // 取得したファイルに別のfdを与える
     return -1;
-  filedup(f);
-  return fd;
+  filedup(f);              // 取得したファイルの参照カウントをインクリメント
+  return fd;               // 新たに取得したfdを返す
 }
 
 int
 sys_read(void)
 {
-  struct file *f;
-  int n;
-  char *p;
+  struct file *f;         // 引数1でfdとして指定
+  int n;                  // 引数3で指定
+  char *p;                // 引数2で指定（ポインタ）
 
   if(argfd(0, 0, &f) < 0 || argint(2, &n) < 0 || argptr(1, &p, n) < 0)
     return -1;
@@ -81,9 +81,9 @@ sys_read(void)
 int
 sys_write(void)
 {
-  struct file *f;
-  int n;
-  char *p;
+  struct file *f;         // 引数1でfdとして指定
+  int n;                  // 引数3で指定
+  char *p;                // 引数2で指定（ポインタ）
 
   if(argfd(0, 0, &f) < 0 || argint(2, &n) < 0 || argptr(1, &p, n) < 0)
     return -1;
@@ -164,7 +164,7 @@ bad:
   return -1;
 }
 
-// ディレクトリ dp は"."と".."を除いて、空であるか?
+// ディレクトリdpは"."と".."を除いて、空であるか?
 static int
 isdirempty(struct inode *dp)
 {
@@ -204,13 +204,13 @@ sys_unlink(void)
   if(namecmp(name, ".") == 0 || namecmp(name, "..") == 0)
     goto bad;
 
-  if((ip = dirlookup(dp, name, &off)) == 0)
+  if((ip = dirlookup(dp, name, &off)) == 0)  // 指定のpathは存在しない
     goto bad;
   ilock(ip);
 
   if(ip->nlink < 1)
     panic("unlink: nlink < 1");
-  if(ip->type == T_DIR && !isdirempty(ip)){
+  if(ip->type == T_DIR && !isdirempty(ip)){  // 指定ディレクトリにファイルあり
     iunlockput(ip);
     goto bad;
   }
@@ -252,13 +252,13 @@ create(char *path, short type, short major, short minor)
   if((ip = dirlookup(dp, name, &off)) != 0){
     iunlockput(dp);
     ilock(ip);
-    if(type == T_FILE && ip->type == T_FILE)
+    if(type == T_FILE && ip->type == T_FILE)  // 同名のファイルあり
       return ip;
     iunlockput(ip);
     return 0;
   }
 
-  if((ip = ialloc(dp->dev, type)) == 0)
+  if((ip = ialloc(dp->dev, type)) == 0)  // 新規inode割り当て
     panic("create: ialloc");
 
   ilock(ip);

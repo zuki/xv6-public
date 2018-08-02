@@ -13,22 +13,22 @@ kbdgetc(void)
   uint st, data, c;
 
   st = inb(KBSTATP);
-  if((st & KBS_DIB) == 0)
+  if((st & KBS_DIB) == 0)  // キーデータなし
     return -1;
-  data = inb(KBDATAP);
+  data = inb(KBDATAP);     // キーデータを読み取る
 
   if(data == 0xE0){
     shift |= E0ESC;
     return 0;
   } else if(data & 0x80){
     // キーが離された
-    data = (shift & E0ESC ? data : data & 0x7F);
-    shift &= ~(shiftcode[data] | E0ESC);
+    data = (shift & E0ESC ? data : data & 0x7F);  // ブレイクコードをメイクコードに変換
+    shift &= ~(shiftcode[data] | E0ESC);          // シフトコード解除
     return 0;
   } else if(shift & E0ESC){
-    // 最後の文字が E0 escapeだった; または、0x80と共に押された
-    data |= 0x80;
-    shift &= ~E0ESC;
+    // 直前の文字が E0 escapeだった; 0x80と共に押された
+    data |= 0x80;                                // ブレイクコードに変換
+    shift &= ~E0ESC;                             // シフトコード解除
   }
 
   shift |= shiftcode[data];

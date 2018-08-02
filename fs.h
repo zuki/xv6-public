@@ -1,4 +1,4 @@
-// オンディスク・ファイルシステムフォーマット。
+// ディスク上のファイルシステムフォーマット。
 // カーネルとユーザプログラムは共にこのヘッダファイルを使用する。
 
 
@@ -6,8 +6,8 @@
 #define BSIZE 512  // ブロックサイズ
 
 // ディスクレイアウト:
-// [ boot block | super block | log | inode blocks |
-//                                          free bit map | data blocks]
+// [ ブートブロック | スーバーブロック | ログ | inodeブロック |
+//                                空きビットマップ | データブロック ]
 //
 // mkfs はスーパーブロックを計算し、初期ファイルシステムを構築する。
 // スーパーブロックはディスクレイアウトを記述する:
@@ -16,9 +16,9 @@ struct superblock {
   uint nblocks;      // データブロックの数
   uint ninodes;      // inodeの数
   uint nlog;         // ログブロックの数
-  uint logstart;     // ログブロックの最初のブロック番号
-  uint inodestart;   // inodeブロックの最初のブロック番号
-  uint bmapstart;    // 空きマップブロックの最初のブロック番号
+  uint logstart;     // 先頭のログブロックのブロック番号
+  uint inodestart;   // 先頭のinodeブロックのブロック番号
+  uint bmapstart;    // 先頭の空きマップブロックのブロック番号
 };
 
 #define NDIRECT 12
@@ -27,15 +27,15 @@ struct superblock {
 
 // オンディスク inode 構造体
 struct dinode {
-  short type;           // ファイルのタイプ
+  short type;           // ファイルの種類
   short major;          // メジャーデバイス番号（T_DEV のみ)
   short minor;          // マイナーデバイス番号 (T_DEV のみ)
-  short nlink;          // ファイルシステムのinodeへのリンクの数
+  short nlink;          // ファイルシステム内のinodeへのリンクの数
   uint size;            // ファイルのサイズ（単位はバイト）
   uint addrs[NDIRECT+1];   // データブロックアドレス
 };
 
-// ブロックあたりのinode
+// ブロックあたりのinode数
 #define IPB           (BSIZE / sizeof(struct dinode))
 
 // inode iを含むブロック
@@ -44,7 +44,7 @@ struct dinode {
 // ブロックあたりのBitmapビット数
 #define BPB           (BSIZE*8)
 
-// ブロックbのbitを含む空きマップのブロック
+// ビットbを含んでいる空きマップのブロック
 #define BBLOCK(b, sb) (b/BPB + sb.bmapstart)
 
 // ディレクトリは一連のdirent構造体を含むファイルである

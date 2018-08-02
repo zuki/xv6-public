@@ -4,7 +4,7 @@ struct spinlock {
 
   // デバック用:
   char *name;        // ロックの名前
-  struct cpu *cpu;   // ロックを獲得中のCPU
+  struct cpu *cpu;   // ロックを保持しているCPU
   uint pcs[10];      // このロックをロックしたコールスタック
                      // （プログラムカウンタの配列）
 };

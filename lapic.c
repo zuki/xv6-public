@@ -32,7 +32,7 @@
 #define TIMER   (0x0320/4)   // ローカルベクタテーブル 0 (TIMER)
   #define X1         0x0000000B   // カウントを1で割る
   #define PERIODIC   0x00020000   // 定期的
-#define PCINT   (0x0340/4)   // パフォーマンスカウンタLVT
+#define PCINT   (0x0340/4)   // 性能モニタリングカウンタLVT
 #define LINT0   (0x0350/4)   // ローカルベクタテーブル 1 (LINT0)
 #define LINT1   (0x0360/4)   // ローカルベクタテーブル 2 (LINT1)
 #define ERROR   (0x0370/4)   // ローカルベクタテーブル 3 (ERROR)
@@ -48,7 +48,7 @@ static void
 lapicw(int index, int value)
 {
   lapic[index] = value;
-  lapic[ID];  // 読み込むことで、書き込みが終了するのを待機する
+  lapic[ID];  // 読み込むことで、書き込みの完了を待つ
 }
 
 void
@@ -61,39 +61,39 @@ lapicinit(void)
   lapicw(SVR, ENABLE | (T_IRQ0 + IRQ_SPURIOUS));
 
   // タイマーはバス周波数でlapic[TICR]から繰り返しカウントダウンし、
-  // 割り込みを発生する。
-  // xv6がもっと正確な時間管理をしたとしたら、
-  // TICRは外部のタイムソースを使って補正されていただろう。
+  // 割り込みを発行する。
+  // xv6でもっと正確な時間管理をしたいのなら、
+  // 外部のタイムソースを使ってTICRを補正するとよいだろう。
   lapicw(TDCR, X1);
   lapicw(TIMER, PERIODIC | (T_IRQ0 + IRQ_TIMER));
   lapicw(TICR, 10000000);
 
-  // 論理割り込みラインを無効化。
+  // 論理割り込みラインを無効化する。
   lapicw(LINT0, MASKED);
   lapicw(LINT1, MASKED);
 
-  // パフォーマンスカウンタオーバーフロー割り込みエントリを提供して
-  // いるマシン上の当該笑い込みを無効化する。
+  // 性能モニタリングカウンタオーバーフロー割り込みエントリが提供
+  // されているマシンで、当該割り込みを無効化する。
   if(((lapic[VER]>>16) & 0xFF) >= 4)
     lapicw(PCINT, MASKED);
 
-  // エラー割り込みをIRQ_ERRORにマップする。
+  // エラー割り込みをIRQ_ERRORにマッピングする。
   lapicw(ERROR, T_IRQ0 + IRQ_ERROR);
 
   // エラーステータスレジスタをクリアする（連続書き込みが必要）
   lapicw(ESR, 0);
   lapicw(ESR, 0);
 
-  // 未処理のすべての割り込みを付けつける。
+  // 未処理のすべての割り込みを確認する。
   lapicw(EOI, 0);
 
-  // Init/Level/De-Assertを送信して、arbitration IDを同期する。
+  // Init/レベルトリガ/レベルデアサートを送信して、アービトレーションIDを同期する。
   lapicw(ICRHI, 0);
   lapicw(ICRLO, BCAST | INIT | LEVEL);
   while(lapic[ICRLO] & DELIVS)
     ;
 
-  // APIC上（プロセッサ上ではない）で割り込みを有効化する。
+  // APIC上（プロセッサ上ではない）での割り込みを有効化する。
   lapicw(TPR, 0);
 }
 
@@ -133,7 +133,7 @@ lapicstartap(uchar apicid, uint addr)
 
   // "BSPは、[汎用スタートアップアルゴリズム]の前に、CMOSシャットダウン
   // コードを0AHに、warmリセットベクタ（40:67をベースとするDWORD）を
-  // APスタートアップにコードを指すように初期化しなければならない。
+  // APスタートアップコードを指すように初期化しなければならない。
   outb(CMOS_PORT, 0xF);  // オフセット0xFはシャットダウンコード
   outb(CMOS_PORT+1, 0x0A);
   wrv = (ushort*)P2V((0x40<<4 | 0x67));  // Warmリセットベクタ
@@ -150,9 +150,9 @@ lapicstartap(uchar apicid, uint addr)
 
   // スタートアップIPIを（2回!)送信してコードに入る。
   // 一般的なハードウェアは、INITによる停止中にある場合、
-  // STARTUPしか受け付けないと思われる。そのため、2回目は無視されるはずで
-  // あるが、これが正式なIntelのアルゴリズムである。
-  // Bochsは2回めの送信について文句を言う。Bochsにとっては最悪だ。
+  // STARTUPを1回しか受け付けないと思われる。そのため、2回目は
+  // 無視されるはずであるが、これがIntel公式のアルゴリズムである。
+  // Bochsは2回めの送信でエラーコードをはく。Bochsにとっては最悪だ。
   for(i = 0; i < 2; i++){
     lapicw(ICRHI, apicid<<24);
     lapicw(ICRLO, STARTUP | (addr>>12));

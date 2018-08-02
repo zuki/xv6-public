@@ -1,5 +1,5 @@
-/* Simple linker script for the JOS kernel.
-   See the GNU ld 'info' manual ("info ld") to learn the syntax. */
+/* JOSカーネルのための簡単なリンカスクリプト。
+   文法に関してはGNU ldの'info'マニュアル ("info ld") を参照のこと。 */
 
 OUTPUT_FORMAT("elf32-i386", "elf32-i386", "elf32-i386")
 OUTPUT_ARCH(i386)
@@ -7,49 +7,49 @@ ENTRY(_start)
 
 SECTIONS
 {
-	/* Link the kernel at this address: "." means the current address */
-        /* Must be equal to KERNLINK */
+	/* このアドレスにカーネルをリンクする: "." は関連とアドレスを意味する */
+        /* KERNLINKと等しくなければならない */
 	. = 0x80100000;
 
 	.text : AT(0x100000) {
 		*(.text .stub .text.* .gnu.linkonce.t.*)
 	}
 
-	PROVIDE(etext = .);	/* Define the 'etext' symbol to this value */
+	PROVIDE(etext = .);	/* 'etext'シンボルをこの値であると定義する */
 
 	.rodata : {
 		*(.rodata .rodata.* .gnu.linkonce.r.*)
 	}
 
-	/* Include debugging information in kernel memory */
+	/* カーネルメモリにデバッグ情報を含める */
 	.stab : {
 		PROVIDE(__STAB_BEGIN__ = .);
 		*(.stab);
 		PROVIDE(__STAB_END__ = .);
-		BYTE(0)		/* Force the linker to allocate space
-				   for this section */
+		BYTE(0)		/* このセクションにスペースを割り当てるよう
+				   リンカに強制する */
 	}
 
 	.stabstr : {
 		PROVIDE(__STABSTR_BEGIN__ = .);
 		*(.stabstr);
 		PROVIDE(__STABSTR_END__ = .);
-		BYTE(0)		/* Force the linker to allocate space
-				   for this section */
+		BYTE(0)		/* このセクションにスペースを割り当てるよう
+				   リンカに強制する */
 	}
 
-	/* Adjust the address for the data segment to the next page */
+	/* データセグメントが次のページにくるようにアドレスを調整する */
 	. = ALIGN(0x1000);
 
-	/* Conventionally, Unix linkers provide pseudo-symbols
-	 * etext, edata, and end, at the end of the text, data, and bss.
-	 * For the kernel mapping, we need the address at the beginning
-	 * of the data section, but that's not one of the conventional
-	 * symbols, because the convention started before there was a
-	 * read-only rodata section between text and data. */
+	/* 規約上、Unixのリンカはtext, data, bssの終端アドレスに疑似
+   * シンボルetext, edata, endを提供している。
+	 * カーネルマッピングにおいて、データセクションの先頭アドレスが
+	 * 必要であるが、規約にはそれにあたるシンボルが存在しない。
+	 * なぜなら、規約はtextとdataの間に読み込み専用のrodataセクションが
+	 * 設けられる前にできたものだからである。 */
 	PROVIDE(data = .);
 
-	/* The data segment */
+	/* データセグメント */
 	.data : {
 		*(.data)
 	}

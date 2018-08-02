@@ -1,4 +1,4 @@
-# 最初のプロセスの実行 /init.
+# 最初のプロセスは /init をexec。
 # このコードはユーザ空間で実行する。
 
 #include "syscall.h"

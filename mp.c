@@ -21,8 +21,8 @@ sum(uchar *addr, int len)
   int i, sum;
 
   sum = 0;
-  for(i=0; i<len; i++)
-    sum += addr[i];
+  for(i=0; i<len; i++)   // int(32bit)で計算してuchar(8bit)で返す。
+    sum += addr[i];      // checksumとしては最下位1バイトが0であれば良い
   return sum;
 }
 
@@ -44,7 +44,7 @@ mpsearch1(uint a, int len)
 // 仕様書によれば次の3箇所のいずれかにある。
 // 1) EBDAの最初のKB内;
 // 2) システムベースメモリの最後のKB内;
-// 3) BIOS ROMの0xE0000から0xFFFFFの間。
+// 3) BIOS ROMの0xF0000から0xFFFFFの間。（訳注: 仕様書には0xF0000とあるのでtypoだろう）
 static struct mp*
 mpsearch(void)
 {

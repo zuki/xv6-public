@@ -7,19 +7,19 @@
 #include "proc.h"
 #include "elf.h"
 
-extern char data[];  // kernel.ldで定義される
+extern char data[];  // kernel.ldで定義
 pde_t *kpgdir;  // scheduler()で使用される
 
 // CPUのカーネルセグメントディスクリプタを設定する。
-// 各CPU上のエントリごとに1回実行する。
+// 各CPUのentryで1回ずつ実行される。
 void
 seginit(void)
 {
   struct cpu *c;
 
-  // 恒等マッピングを使用して「論理」アドレスから仮想アドレスにマップする。
-  // カーネル用とユーザ用のコードディスクリプタを共用することはできない。
-  // なぜなら、共有する場合は、DPL_USRをもつことになるが、CPUはCPL=0から
+  // 恒等マッピングを使用して「論理」アドレスを仮想アドレスにマッピングする。
+  // カーネル用とユーザ用のコードディスクリプタの共用はできない。
+  // なぜなら、共用する場合はDPL_USRを持たねばならないが、CPUはCPL=0から
   // DPL=3への割り込みを禁止しているからである。
   c = &cpus[cpuid()];
   c->gdt[SEG_KCODE] = SEG(STA_X|STA_R, 0, 0xffffffff, 0);
@@ -29,8 +29,8 @@ seginit(void)
   lgdt(c->gdt, sizeof(c->gdt));
 }
 
-// ページテーブルpgdir内の、仮想アドレスvaに対応するPTEのアドレスを返す。
-// alloc!=0 の場合は、
+// 仮想アドレスvaに対応するページテーブルpgdirのPTEのアドレスを返す。
+// alloc != 0 の場合は、
 // 必要なページテーブルページを作成する。
 static pte_t *
 walkpgdir(pde_t *pgdir, const void *va, int alloc)
@@ -42,11 +42,11 @@ walkpgdir(pde_t *pgdir, const void *va, int alloc)
   if(*pde & PTE_P){
     pgtab = (pte_t*)P2V(PTE_ADDR(*pde));
   } else {
-    if(!alloc || (pgtab = (pte_t*)kalloc()) == 0)  // 割当不要または割当失敗の場合は0を返す
+    if(!alloc || (pgtab = (pte_t*)kalloc()) == 0) // 割当不要または失敗の場合は0を返す
       return 0;
-    // これらすべてのPTE_Pが0になるようにする
+    // すべてのページテーブルエントリのPTE_Pビットを0にする
     memset(pgtab, 0, PGSIZE);
-    // ここでのパーミッションは通常上書きされるが、
+    // 通常、ここでのパーミッションは上書きされるが、
     // 必要であれば、ページテーブルエントリのパーミションでさらに制限する
     // こともできる。
     *pde = V2P(pgtab) | PTE_P | PTE_W | PTE_U;
@@ -54,9 +54,9 @@ walkpgdir(pde_t *pgdir, const void *va, int alloc)
   return &pgtab[PTX(va)];
 }
 
-// vaで始まる仮想アドレスのためのPTE（ページテーブルエントリ）を作成する。
-// これはpaから始まる物理アドレスを参照する。
-// vaとサイズはページ境界にない可能性がある。成功した場合は0を返す。
+// vaから始まる仮想アドレスがpaから始まる物理アドレスを参照するように
+// するためのPTE（ページテーブルエントリ）を作成する。
+// vaとサイズはページ境界にない可能性がある。
 static int
 mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm)
 {
@@ -79,26 +79,26 @@ mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm)
   return 0;
 }
 
-// プロセスごとに1つページテーブルがあり、さらに1つ、CPUがプロセスを1つも実行していない時に
-// 使用されるページテーブルがある(kpgdir)。カーネルはシステムコールと割り込み処理の間、
-// カレントプロセスのページテーブルを使用する。
-// ページ保護ビットはユーザコードがカーネルマッピングを使用することを
-// 防止する。
+// ページテーブルはプロセスごとに1つあり、さらに1つ、CPUがプロセスを
+// 1つも実行していない時に使用するページテーブルがある(kpgdir)。
+// システムコールと割り込み処理の際、カーネルはカレントプロセスの
+// ページテーブルを使用する。ページ保護ビットがユーザコードによる
+// カーネルマッピングの使用を禁止する。
 //
-// setupkvm() と exec() は次のように各ページテーブルを設定する:
+// setupkvm() と exec() はすべてのページテーブルを次のように設定する:
 //
-//   0..KERNBASE: ユーザメモリ (text+data+stack+heap),
-//                カーネルにより割り当てられた物理メモリにマップされる
-//   KERNBASE..KERNBASE+EXTMEM: 0..EXTMEM にマップされる(I/O 空間用)
-//   KERNBASE+EXTMEM..data: EXTMEM..V2P(data)にマップされる
-//                カーネルの命令コード読み込み専用データ用
-//   data..KERNBASE+PHYSTOP: V2P(data)..PHYSTOPにマップされる
-//                読み書きデータとフリー物理メモリ
-//   0xfe000000..0: 直接マップされる（ioapicなどのデバイス）
+//   0..KERNBASE: ユーザメモリ (text+data+stack+heap)
+//                カーネルにより割り当てられる物理メモリにマッピングされる
+//   KERNBASE..KERNBASE+EXTMEM: 0..EXTMEM にマッピングされる(I/O 空間用)
+//   KERNBASE+EXTMEM..data: EXTMEM..V2P(data)にマッピングされる
+//                カーネルの命令コードと読み込み専用データ用
+//   data..KERNBASE+PHYSTOP: V2P(data)..PHYSTOPにマッピングされる
+//                読み書きデータと空き物理メモリ
+//   0xfe000000..0: そのままマッピングされる（ioapicなどのデバイス）
 //
-// カーネルは自身のヒープとユーザメモリ用に物理メモリをV2P(end)と
-// 物理メモリの終わり(PHYSTOP)の間に割り当てる。
-// （end..P2V(PHYSTOP)は直接アドレス可能）
+// カーネルは自身のヒープ用とユーザメモリ用の物理メモリを
+// V2P(end)から物理メモリ上限(PHYSTOP)の間に割り当てる。
+// （end..P2V(PHYSTOP)は直接アドレスすることができる）
 
 // このテーブルはカーネルのマッピングを定義する。これは全プロセスの
 // ページテーブルに現れる
@@ -121,7 +121,7 @@ setupkvm(void)
   pde_t *pgdir;
   struct kmap *k;
 
-  if((pgdir = (pde_t*)kalloc()) == 0)    // ページテーブルの割当
+  if((pgdir = (pde_t*)kalloc()) == 0)    // ページテーブルの割り当て
     return 0;
   memset(pgdir, 0, PGSIZE);              // ページテーブルを0詰め
   if (P2V(PHYSTOP) > (void*)DEVSPACE)
@@ -135,8 +135,8 @@ setupkvm(void)
   return pgdir;
 }
 
-// スケジューラプロセス用にカーネルアドレス空間用の
-// ページテーブルを1つマシンに割り当てる
+// スケジューラプロセスが使用するカーネルアドレス空間用の
+// ページテーブルをマシンに1つ割り当てる
 void
 kvmalloc(void)
 {
@@ -144,8 +144,8 @@ kvmalloc(void)
   switchkvm();
 }
 
-// 実行中のプロセスがない場合に備えて、
-// ハードウェアページテーブルレジスタをカーネル専用のページテーブルに切り替える
+// 実行中のプロセスがない場合は、ハードウェアのページテーブルレジスタを
+// カーネル専用のページテーブルに切り替える
 void
 switchkvm(void)
 {
@@ -166,11 +166,11 @@ switchuvm(struct proc *p)
   pushcli();
   mycpu()->gdt[SEG_TSS] = SEG16(STS_T32A, &mycpu()->ts,
                                 sizeof(mycpu()->ts)-1, 0);
-  mycpu()->gdt[SEG_TSS].s = 0;
+  mycpu()->gdt[SEG_TSS].s = 0;       // TSSディスクリプタ
   mycpu()->ts.ss0 = SEG_KDATA << 3;
   mycpu()->ts.esp0 = (uint)p->kstack + KSTACKSIZE;
-  // elangsにIOPL=0を設定し、*かつ*、tssセグメントのリミット値を超える値を
-  // iombに設定するとユーザ空間からのI/O命令（inbやoutb）を禁止する。
+  // eflagsにおけるIOPL=0の設定、*かつ*、iombへのtssセグメントのリミット値を
+  // 超える値の設定により、ユーザ空間からのI/O命令（inbとoutbなど）を禁止する。
   mycpu()->ts.iomb = (ushort) 0xFFFF;
   ltr(SEG_TSS << 3);
   lcr3(V2P(p->pgdir));  // プロセスのアドレス空間に切り替える
@@ -193,7 +193,7 @@ inituvm(pde_t *pgdir, char *init, uint sz)
 }
 
 // プログラムセグメントをpgdirにロードする。addrはページ境界になければならない。
-// また、addrからaddr+szのページはすでにマップされていなければならない。
+// また、addrからaddr+szのページはマッピング済みでなければならない。
 int
 loaduvm(pde_t *pgdir, char *addr, struct inode *ip, uint offset, uint sz)
 {
@@ -216,8 +216,8 @@ loaduvm(pde_t *pgdir, char *addr, struct inode *ip, uint offset, uint sz)
   return 0;
 }
 
-// プロセスをoldszからnewszに拡張するためにページテーブルと物理メモリを割り当てる
-// サイズはページ境界になくても良い。新しいサイズ、またはエラーの場合は0を返す
+// プロセスをoldszからnewszに拡張するためにページテーブルと物理メモリを割り当てる。
+// サイズはページ境界になくても良い。新しいサイズを返す。エラーの場合は0を返す。
 int
 allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
 {
@@ -248,8 +248,8 @@ allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
   return newsz;
 }
 
-// プロセスサイズをoldszからnewszにするためにユーザページの割り当てを解除する
-// oldszとnewszはページ境界になくても良い。また、newszはoldszより小さくなくても良い
+// プロセスサイズをoldszからnewszにするためにユーザページの割り当てを解除する。
+// oldszとnewszはページ境界になくても良い。また、newszはoldszより小さくなくても良い。
 // oldszは実際のプロセスサイズより大きくても良い
 // 新しいプロセスサイズを返す
 int
@@ -278,7 +278,7 @@ deallocuvm(pde_t *pgdir, uint oldsz, uint newsz)
   return newsz;
 }
 
-// ユーザ部分のページテーブルとすべての物理メモリを
+// ページテーブルとユーザ部分のすべての物理メモリを
 // 解放する。
 void
 freevm(pde_t *pgdir)
@@ -310,7 +310,7 @@ clearpteu(pde_t *pgdir, char *uva)
   *pte &= ~PTE_U;
 }
 
-// 親プロセスのページテーブルを与えると、子プロセス用に
+// 親プロセスのページテーブルを与え、子プロセス用に
 // それのコピーを作成する。
 pde_t*
 copyuvm(pde_t *pgdir, uint sz)
@@ -343,7 +343,7 @@ bad:
 }
 
 //PAGEBREAK!
-// ユーザ仮想アドレスをカーネルアドレスにマップする。
+// ユーザ仮想アドレスをカーネルアドレスにマッピングする。
 char*
 uva2ka(pde_t *pgdir, char *uva)
 {
@@ -357,9 +357,9 @@ uva2ka(pde_t *pgdir, char *uva)
   return (char*)P2V(PTE_ADDR(*pte));
 }
 
-// pからページテーブル pgdirのユーザアドレス va へ lenバイトコピーする
-// pgdirがカレントページテーブルでない場合に最も有効
-// uva2ka はPTF_Uページでのみ処理さることこを保証する
+// pからページテーブル pgdirのユーザアドレス va へ lenバイトコピーする。
+// pgdirがカレントページテーブルでない場合に最も役に立つ。
+// uva2ka はこの関数がPTF_Uページでのみ動作することを保証する。
 int
 copyout(pde_t *pgdir, uint va, void *p, uint len)
 {

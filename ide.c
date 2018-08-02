@@ -1,4 +1,4 @@
-// 簡単なPIOベース（DMAではない）IDEドライバコード。
+// 簡単なPIOベース（DMAを使用しない）IDEドライバのコード。
 
 #include "types.h"
 #include "defs.h"
@@ -24,7 +24,7 @@
 #define IDE_CMD_RDMUL 0xc4
 #define IDE_CMD_WRMUL 0xc5
 
-// idequeue は現在ディスクを読み込み/書き込みしているバッファを指している。
+// idequeue は現在ディスクを読み書きしているバッファを指している。
 // idequeue->qnext は次に処理するバッファを指している。
 // キューの操作中はidelockを保持しなければならない。
 
@@ -34,7 +34,7 @@ static struct buf *idequeue;
 static int havedisk1;
 static void idestart(struct buf*);
 
-// IDEディスクの準備が整うのを待つ。
+// IDEディスクの準備完了を待つ。
 static int
 idewait(int checkerr)
 {
@@ -69,7 +69,7 @@ ideinit(void)
   outb(0x1f6, 0xe0 | (0<<4));
 }
 
-// bの要求を開始する。呼び出し側はidelockを保持していなければならない、
+// バッファに対するリクエストを開始する。呼び出し側はidelockの保持が必要。
 static void
 idestart(struct buf *b)
 {
@@ -105,7 +105,7 @@ ideintr(void)
 {
   struct buf *b;
 
-  // キューの先頭のバッファはアクティブリクエストである。
+  // キューの先頭のバッファが処理対象のリクエストである。
   acquire(&idelock);
 
   if((b = idequeue) == 0){
@@ -114,16 +114,16 @@ ideintr(void)
   }
   idequeue = b->qnext;
 
-  // 必要ならデータを読み込む。
+  // 必要であればデータを読み込む。
   if(!(b->flags & B_DIRTY) && idewait(1) >= 0)
     insl(0x1f0, b->data, BSIZE/4);
 
-  // このバッファを待っているプロセスを起こす。
+  // このバッファを待機しているプロセスを起床させる。
   b->flags |= B_VALID;
   b->flags &= ~B_DIRTY;
   wakeup(b);
 
-  // キューの次のバッファでディスクを起動する。
+  // キューの次のバッファのディスク処理を開始する。
   if(idequeue != 0)
     idestart(idequeue);
 
@@ -154,11 +154,11 @@ iderw(struct buf *b)
     ;
   *pp = b;
 
-  // 必要ならディスクを起動する。
+  // 必要であればディスク処理を開始する。
   if(idequeue == b)
     idestart(b);
 
-  // 要求が完了するのを待つ。
+  // リクエストが完了するのを待つ。
   while((b->flags & (B_VALID|B_DIRTY)) != B_VALID){
     sleep(b, &idelock);
   }

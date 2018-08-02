@@ -1,7 +1,7 @@
 // ブートローダ。
 //
 // bootmain()を呼び出すbootasm.Sと共にブートブロックを形成する。
-// bootasm.Sは、プロセッサを32ビットプロテクトモードにする。
+// bootasm.Sは、プロセッサを32ビットプロテクトモードにした。
 // bootmain()は、ディスクのセクタ1からELFカーネルイメージをロードして、
 // カーネルのエントリルーチンにジャンプする。
 
@@ -73,7 +73,7 @@ readsect(void *dst, uint offset)
   insl(0x1F0, dst, SECTSIZE/4);
 }
 
-// カーネルから'offset'の'count'バイトを物理アドレス'pa'に読み込む。
+// カーネルの'offset'から'count'バイトを物理アドレス'pa'に読み込む。
 // 要求以上にコピーする場合がある。
 void
 readseg(uchar* pa, uint count, uint offset)
@@ -88,7 +88,7 @@ readseg(uchar* pa, uint count, uint offset)
   // バイトをセクタに変換する; カーネルはセクタ1から始まる。
   offset = (offset / SECTSIZE) + 1;
 
-  // これが遅すぎる場合は、一度のもっと多くのセクタを読み込めるかもしれない。
+  // これが遅すぎる場合は、一度にもっと多くのセクタを読み込めるかもしれない。
   // 要求以上にメモリに書き込む場合があるが、昇順でロードするので、
   // 問題はない。
   for(; pa < epa; pa += SECTSIZE, offset++)

@@ -1,4 +1,4 @@
-// Cコードがx86特殊命令を使用できるようにするためのルーチン。
+// Cコードでx86特殊命令を使用するためのルーチン。
 
 static inline uchar
 inb(ushort port)
@@ -148,7 +148,7 @@ lcr3(uint val)
 // ハードウェアとtrapasm.Sによりスタック上に構築され、
 // trap()に渡されるトラップフレームのレイアウト
 struct trapframe {
-  // pushaによりプッシュされるレジスタ
+  // pushaによりプッシュされるレジスタ群
   uint edi;
   uint esi;
   uint ebp;
@@ -176,7 +176,7 @@ struct trapframe {
   ushort padding5;
   uint eflags;
 
-  // これより下はユーザからカーネルへ、など空間をまたぐ時のみ
+  // これより下はユーザからカーネルなど、空間をまたぐ時のみ
   uint esp;
   ushort ss;
   ushort padding6;

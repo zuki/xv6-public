@@ -1,6 +1,6 @@
 // I/O APICはSMPシステムのハードウェア割り込みを管理する。
 // http://www.intel.com/design/chipsets/datashts/29056601.pdf
-// picirq.cも参照。
+// picirq.cも参照のこと。
 
 #include "types.h"
 #include "defs.h"
@@ -24,7 +24,7 @@
 
 volatile struct ioapic *ioapic;
 
-// IO APIC MMIO 構造体: regを書き込み、次にdataの読み込み/書き込みを行う。
+// IO APIC MMIO 構造体: regに書き込み、次にdataの読み込み/書き込みを行う。
 struct ioapic {
   uint reg;
   uint pad[3];
@@ -56,7 +56,7 @@ ioapicinit(void)
   if(id != ioapicid)
     cprintf("ioapicinit: id isn't equal to ioapicid; not a MP\n");
 
-  // すべての割り込みの設定を、エッジトリガ、アクティブハイ、禁止、
+  // すべての割り込みの設定を、エッジトリガ、アクティブハイ、割り込み無効、
   // どのCPUにも転送しない、とする。
   for(i = 0; i <= maxintr; i++){
     ioapicwrite(REG_TABLE+2*i, INT_DISABLED | (T_IRQ0 + i));
@@ -67,9 +67,9 @@ ioapicinit(void)
 void
 ioapicenable(int irq, int cpunum)
 {
-  // 割り込みの設定を、エッジトリガ、アクティブハイ、受け付ける、
+  // 割り込みの設定を、エッジトリガ、アクティブハイ、割り込み有効、
   // 指定されたcpunumに転送する、とする。
-  // cpunumはそのcpuのAPIC IDであることもある。
+  // cpunumはそのcpuのAPIC IDでもある。
   ioapicwrite(REG_TABLE+2*irq, T_IRQ0 + irq);
   ioapicwrite(REG_TABLE+2*irq+1, cpunum << 24);
 }

@@ -10,7 +10,7 @@
 
 // 割り込みディスクリプタテーブル（すべてのCPUで共有される）
 struct gatedesc idt[256];
-extern uint vectors[];  // vectors.Sで設定される: 256エントリポインタの配列
+extern uint vectors[];  // vectors.Sで設定: 256エントリポインタの配列
 struct spinlock tickslock;
 uint ticks;
 
@@ -81,12 +81,12 @@ trap(struct trapframe *tf)
   //PAGEBREAK: 13
   default:
     if(myproc() == 0 || (tf->cs&3) == 0){
-      // カーネルたったら、何か問題があったに違いない。
+      // カーネルで発生。OSの問題に違いない。
       cprintf("unexpected trap %d from cpu %d eip %x (cr2=0x%x)\n",
               tf->trapno, cpuid(), tf->eip, rcr2());
       panic("trap");
     }
-    // ユーザ空間だったら、プロセスが不正を行ったとみなす。
+    // ユーザ空間で発生。プロセスが不正を行ったようだ。
     cprintf("pid %d %s: trap %d err %d on cpu %d "
             "eip 0x%x addr 0x%x--kill proc\n",
             myproc()->pid, myproc()->name, tf->trapno,
@@ -94,14 +94,14 @@ trap(struct trapframe *tf)
     myproc()->killed = 1;
   }
 
-  // プロセスがkillされていて、ユーザ空間に合ったらプロセスを
-  // 終了させる（カーネルで実行中の場合は、一般的なシステム
+  // プロセスがkillされており、ユーザ空間のプロセスであれば、
+  // プロセスを終了させる（カーネルで実行中の場合は、通常のシステム
   // コールの復帰を確認するまで実行を継続させる）。
   if(myproc() && myproc()->killed && (tf->cs&3) == DPL_USER)
     exit();
 
-  // クロックティックではCPUを放棄させる。
-  // 割り込みがロックの保持中にあった場合は、nlockをチェックする必要がある。
+  // クロック割り込みの場合はCPUを放棄させる。
+  // (訳注: Obsolute)割り込みがロックの保持中にあったか否かをnlockでチェックする必要があるだろう。
   if(myproc() && myproc()->state == RUNNING &&
      tf->trapno == T_IRQ0+IRQ_TIMER)
     yield();

@@ -28,9 +28,9 @@
 #define KEY_INS         0xE8
 #define KEY_DEL         0xE9
 
-// C('A') == Control-A
+// C('A') == Control-A 制御コードC0集合の値 ^@ = 0x00 ^A = 0x01 ^B = 0x02
 #define C(x) (x - '@')
-
+// 以下はスキャンコードセット1のコード（メイクコード: 押した時のコード）
 static uchar shiftcode[256] =
 {
   [0x1D] CTL,
@@ -61,7 +61,7 @@ static uchar normalmap[256] =
   NO,   NO,   NO,   NO,   NO,   NO,   NO,   '7',  // 0x40
   '8',  '9',  '-',  '4',  '5',  '6',  '+',  '1',
   '2',  '3',  '0',  '.',  NO,   NO,   NO,   NO,   // 0x50
-  [0x9C] '\n',      // KP_Enter
+  [0x9C] '\n',      // KP_Enter                   // ここからは独自指定
   [0xB5] '/',       // KP_Div
   [0xC8] KEY_UP,    [0xD0] KEY_DN,
   [0xC9] KEY_PGUP,  [0xD1] KEY_PGDN,

@@ -4,7 +4,7 @@
 
 struct stat {
   short type;  // ファイルの種類
-  int dev;     // ファイルシステムのディスクデバイス
+  int dev;     // ファイルシステムのディスク装置
   uint ino;    // inode番号
   short nlink; // ファイルへのリンク数
   uint size;   // ファイルのサイズ（単位はバイト）

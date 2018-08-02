@@ -1,9 +1,9 @@
 # コンテキストスイッチ
-#
 #   void swtch(struct context **old, struct context *new);
 #
-# カレントレジスタコンテキストをoldに保存し、
-# fromからレジスタコンテキストをロードする。
+# 現在のレジスタをスタックに保存し、struct contextを
+# 作成してそのアドレスを*oldに保存する。スタックをnewに
+# 切り替え、以前に保存していたレジスタをポップする。
 
 .globl swtch
 swtch:

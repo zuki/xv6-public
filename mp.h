@@ -42,7 +42,7 @@ struct mpioapic {       // I/O APIC テーブルエントリ
   uchar apicno;                 // I/O APIC ID
   uchar version;                // I/O APIC バージョン
   uchar flags;                  // I/O APIC フラグ
-  uint *addr;                  // I/O APIC アドレス
+  uint *addr;                   // I/O APIC アドレス
 };
 
 // テーブルエントリ種別

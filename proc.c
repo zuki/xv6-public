@@ -23,7 +23,7 @@ static void wakeup1( void * chan );
 void
 pinit(void)
 {
-  initlock( &ptable . lock, "ptable" );
+  initlock( &ptable.lock, "ptable" );
 }
 
 // 割り込みを禁止してから呼び出す必要がある
@@ -32,7 +32,7 @@ cpuid() {
   return mycpu()-cpus;
 }
 
-// lapicidの読み込みとループの実行の間に呼び出し側が再スケジュール
+// lapicidの読み込みとループ実行の間に呼び出し側が再スケジュール
 // されないように、割り込みを禁止してから呼び出す必要がある
 struct cpu*
 mycpu(void)
@@ -44,7 +44,7 @@ mycpu(void)
 
   apicid = lapicid();
   // APIC IDは連続であるとは限らない。リバースマップを持つか
-  // &CUPUS[I]を格納するレジスタを予約するべきだろう。
+  // &cpus[i]を格納するレジスタを用意するべきだろう。
   for (i = 0; i < ncpu; ++i) {
     if (cpus[i].apicid == apicid)
       return &cpus[i];
@@ -52,7 +52,7 @@ mycpu(void)
   panic("unknown apicid\n");
 }
 
-// cpu構造体からprocを読み込み間に再スケジュールされないように、
+// cpu構造体からprocを読み込む間に再スケジュールされないように、
 // 割り込みを禁止する
 struct proc*
 myproc(void) {
@@ -142,9 +142,9 @@ userinit(void)
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
 
-  // p->stateにRUNNABLEを設定すると、他のコアがこのプロセスを実行
-  // できるようになる。acquireは上の書き込みを見えるようにさせる。
-  // この設定はアトミックではない可能性もあるので、
+  // このp->stateへの代入により、他のコアがこのプロセスを実行
+  // できるようになる。acquireは上の書き込みを可視化する。
+  // また、代入はアトミックではない可能性もあるので、
   // ロックが必要である。
   acquire(&ptable.lock);
 
@@ -175,8 +175,8 @@ growproc(int n)
 }
 
 // pを親としてコピーして新しいプロセスを作成する。
-// システムコールから帰るかのように復帰用のスタックを設定する。
-// 呼び出し側は返されるprocのstateをRUNNABLEにセットしなければならない。
+// システムコールから復帰したかのような復帰用のスタックを構成する。
+// 呼び出し側は返されたprocのstateをRUNNABLEにセットしなければならない。（Obsolute: copyproc）
 int
 fork(void)
 {
@@ -189,7 +189,7 @@ fork(void)
     return -1;
   }
 
-  // procからプロセスの状態をコピーする。
+  // curprocからプロセスの状態をコピーする。
   if((np->pgdir = copyuvm(curproc->pgdir, curproc->sz)) == 0){
     kfree(np->kstack);
     np->kstack = 0;
@@ -252,7 +252,7 @@ exit(void)
   // 親プロセスはwait()でスリープしている可能性がある。
   wakeup1(curproc->parent);
 
-  // 見捨てられる子プロセスをinitに渡す。
+  // 子プロセスは見捨ててinitに渡す。
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->parent == curproc){
       p->parent = initproc;
@@ -316,9 +316,9 @@ wait(void)
 // 各CPUは自身を設定した後 scheduler() を呼び出す。
 // スケジューラは復帰しない。ループして以下を行う:
 //  - 実行するプロセスを選択する
-//  - スイッチしてそのプロセスの実行を開始する
-//  - 最後にそのプロセスに制御を渡す
-//      スイッチバックでスケジューラに戻る
+//  - swtchを呼び出してそのプロセスの実行を開始する
+//  - 最終的にそのプロセスはスswtchを呼び出して
+//      スケジューラに制御を戻す
 void
 scheduler(void)
 {
@@ -337,7 +337,7 @@ scheduler(void)
         continue;
 
       // 選択したプロセスにスイッチする。ptable.lockを解放して、
-      // スケジューラに戻る前に再ロックするのは
+      // スケジューラに戻る前に再度ロックするのは
       // プロセスの仕事である。
       c->proc = p;
       switchuvm(p);
@@ -347,7 +347,7 @@ scheduler(void)
       switchkvm();
 
       // ここではプロセスは実行を終えている。
-      // プロセスはここに戻る前に自分のp->stateを変更しているするはずだ。
+      // プロセスはここに戻る前に自分でp->stateを変更しているするはずだ。
       c->proc = 0;
     }
     release(&ptable.lock);
@@ -355,12 +355,12 @@ scheduler(void)
   }
 }
 
-// スケジューラに入る。ptable.lockを保持し、
+// スケジューラに入る。ptable.lockだけを保持し、
 // proc->stateが変更されていなければならない。
 // intenaは、このカーネルスレッドの属性であり
 // このCPUの属性ではないので、intenaの保存と復元を行う。
-// 本来ならproc->intenaとproc->ncliとするべきだた、それだと
-// ロックを保持しているがプロセスがないような場所で
+// 本来ならproc->intenaとproc->ncliとするべきだが、それだと
+// ロックは保持されているがプロセスがないような場所で
 // まれに破綻する可能性がある。
 void
 sched(void)
@@ -409,11 +409,11 @@ forkret(void)
     initlog(ROOTDEV);
   }
 
-  // "caller"に戻るが、実際はtrapretに戻る（allocproc参照）。
+  // 「呼び出し元」に戻るが、実際はtrapretに戻る（allocprocを参照）。
 }
 
 // アトミックにロックを解放し、chanでスリープする。
-// 目覚めた時にロックを再度獲得する。
+// 起床した時にロックを再度獲得する。
 void
 sleep(void *chan, struct spinlock *lk)
 {
@@ -426,10 +426,10 @@ sleep(void *chan, struct spinlock *lk)
     panic("sleep without lk");
 
   // p->stateを変更し、schedを呼び出すために
-  // ptable.lockの獲得しなければならない。
-  // ptable.lockを保持していれば, 起こし忘れが
-  // ないことが保証されるので
-  // (wakeupはptable.lockをロックしてから実行するので),
+  // ptable.lockを獲得しなければならない。
+  // ptable.lockを保持すれば, 起こし忘れが
+  // ないことが保証される（wakeupはptable.lockが
+  // ロックされた状態で実行する）ので,
   // lkを解放しても問題はない。
   if(lk != &ptable.lock){  //DOC: sleeplock0
     acquire(&ptable.lock);  //DOC: sleeplock1
@@ -444,7 +444,7 @@ sleep(void *chan, struct spinlock *lk)
   // 後片付けをする。
   p->chan = 0;
 
-  // オリジナルのロックを再度獲得する。
+  // 元々保持していたロックを再度獲得する。
   if(lk != &ptable.lock){  //DOC: sleeplock2
     release(&ptable.lock);
     acquire(lk);
@@ -452,7 +452,7 @@ sleep(void *chan, struct spinlock *lk)
 }
 
 //PAGEBREAK!
-// chanでスリープしているすべてのプロセスを起こす。
+// chanでスリープしているすべてのプロセスを起床させる。
 // ptable.lockを保持していなければならない。
 static void
 wakeup1(void *chan)
@@ -464,7 +464,7 @@ wakeup1(void *chan)
       p->state = RUNNABLE;
 }
 
-// chanでスリープしているすべてのプロセスを起こす。
+// chanでスリープしているすべてのプロセスを起床させる。
 void
 wakeup(void *chan)
 {
@@ -485,7 +485,7 @@ kill(int pid)
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->pid == pid){
       p->killed = 1;
-      // 必要であれば寝ているプロセスを起こす。
+      // 必要であれば寝ているプロセスを起床させる。
       if(p->state == SLEEPING)
         p->state = RUNNABLE;
       release(&ptable.lock);
@@ -498,7 +498,7 @@ kill(int pid)
 
 //PAGEBREAK: 36
 // プロセス一覧をコンソールに出力する。デバッグ用。
-// ユーザがコンソールで^pとタイプすると実行する。
+// ユーザがコンソールで^Pとタイプすると実行する。
 // スタックしたマシンをさらに割り込ませないようにロックはしない。
 void
 procdump(void)

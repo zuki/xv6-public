@@ -22,12 +22,12 @@
 #define T_MCHK          18      // マシンチェック
 #define T_SIMDERR       19      // SIMD浮動小数点エラー
 
-// 以下は任意に選択したものであるが、プロセッサが定義している
-// 例外や割り込みベクタと重ならないように注意はしている。
+// 以下の値は任意に選んだものであるが、プロセッサが定義している
+// 例外・割り込みベクタと重ならないように注意している。
 #define T_SYSCALL       64      // システムコール
 #define T_DEFAULT      500      // キャッチオール
 
-#define T_IRQ0          32      // IRQ 0 はInt T_IRQに相当する
+#define T_IRQ0          32      // IRQ 0 はint T_IRQに相当する
 
 #define IRQ_TIMER        0
 #define IRQ_KBD          1
