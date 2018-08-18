@@ -89,3 +89,15 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+// UTC時間を返す
+int
+sys_date(void)
+{
+  struct rtcdate *date;
+
+  if (argptr(0, (char **)&date, sizeof(struct rtcdate)) < 0)
+    return -1;
+  cmostime(date);
+  return 0;
+}
