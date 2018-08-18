@@ -130,6 +130,7 @@ static int (*syscalls[])(void) = {
 [SYS_date]   sys_date,
 };
 
+/*
 static char *syscallnames[] = {
 [SYS_fork]    "fork",
 [SYS_exit]    "exit",
@@ -154,6 +155,7 @@ static char *syscallnames[] = {
 [SYS_close]   "close",
 [SYS_date]   "date",
 };
+*/
 
 void
 syscall(void)
@@ -164,7 +166,10 @@ syscall(void)
   num = curproc->tf->eax;
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
     curproc->tf->eax = syscalls[num]();
-    cprintf("%s -> %d\n", syscallnames[num], curproc->tf->eax);
+    /*
+    if (num != SYS_write && num != SYS_read)
+      cprintf("%s -> %d\n", syscallnames[num], curproc->tf->eax);
+    */
   } else {
     cprintf("%d %s: unknown sys call %d\n",
             curproc->pid, curproc->name, num);
