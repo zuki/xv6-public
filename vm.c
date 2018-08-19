@@ -57,7 +57,7 @@ walkpgdir(pde_t *pgdir, const void *va, int alloc)
 // vaから始まる仮想アドレスがpaから始まる物理アドレスを参照するように
 // するためのPTE（ページテーブルエントリ）を作成する。
 // vaとサイズはページ境界にない可能性がある。
-static int
+int
 mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm)
 {
   char *a, *last;

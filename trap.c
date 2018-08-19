@@ -13,6 +13,7 @@ struct gatedesc idt[256];
 extern uint vectors[];  // vectors.Sで設定: 256エントリポインタの配列
 struct spinlock tickslock;
 uint ticks;
+int mappages(pde_t *, void *, uint, uint, int);
 
 void
 tvinit(void)
@@ -86,6 +87,38 @@ trap(struct trapframe *tf)
               tf->trapno, cpuid(), tf->eip, rcr2());
       panic("trap");
     }
+    if (tf->trapno == T_PGFLT) {
+      uint a, oldsz, newsz;
+      char *mem;
+
+      oldsz = rcr2();
+      newsz = myproc()->sz;
+      if (newsz >= oldsz) {
+        if(newsz >= KERNBASE)
+          goto destroy;
+        a = PGROUNDDOWN(oldsz);
+        for(; a < newsz; a += PGSIZE){
+          mem = kalloc();
+          if(mem == 0){
+            cprintf("allocuvm out of memory\n");
+            deallocuvm(myproc()->pgdir, newsz, oldsz);
+            goto destroy;
+          }
+          memset(mem, 0, PGSIZE);
+          if (mappages(myproc()->pgdir, (char*)a, PGSIZE, V2P(mem), PTE_W|PTE_U) < 0){
+            cprintf("allocuvm out of memory (2)\n");
+            deallocuvm(myproc()->pgdir, newsz, oldsz);
+            kfree(mem);
+            goto destroy;
+          }
+        }
+      } else {
+        if ((newsz = deallocuvm(myproc()->pgdir, newsz, oldsz)) == 0)
+          goto destroy;
+      }
+      break;
+    }
+destroy:
     // ユーザ空間で発生。プロセスが不正を行ったようだ。
     cprintf("pid %d %s: trap %d err %d on cpu %d "
             "eip 0x%x addr 0x%x--kill proc\n",
