@@ -49,6 +49,9 @@ struct proc {
   struct file *ofile[NOFILE];  // オープンしたファイル
   struct inode *cwd;           // カレントディレクトリ
   char name[16];               // プロセス名（デバッグ用）
+  int cputicks;                // cpu ticks
+  int alarmticks;              // アラーム間隔(ticsk)
+  void (*alarmhandler)();      // アラームハンドラ関数
 };
 
 // プロセスメモリは、低位アドレスから次のように、連続的に配置される。

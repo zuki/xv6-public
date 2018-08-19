@@ -112,6 +112,11 @@ found:
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
 
+  // alarm関係の初期化
+  p->cputicks = 0;
+  p->alarmticks = 0;
+  p->alarmhandler = (void (*)())0;
+
   return p;
 }
 

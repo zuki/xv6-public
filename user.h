@@ -25,6 +25,7 @@ int sleep(int);
 int uptime(void);
 int date(struct rtcdate*);
 int dup2(int, int);
+int alarm(int, void(*)());
 
 // ulib.c
 int stat(char*, struct stat*);
