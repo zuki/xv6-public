@@ -24,7 +24,7 @@ initlock(struct spinlock *lk, char *name)
 void
 acquire(struct spinlock *lk)
 {
-  pushcli(); // ヘッドロックを避けるために割り込みを禁止する。
+  pushcli(); // デッドロックを避けるために割り込みを禁止する。
   if(holding(lk))
     panic("acquire");
 
