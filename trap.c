@@ -102,6 +102,8 @@ trap(struct trapframe *tf)
 
       oldsz = rcr2();
       newsz = myproc()->sz;
+      if (oldsz >= KERNBASE)  // for uthread
+        goto destroy;
       if (newsz >= oldsz) {
         if(newsz >= KERNBASE)
           goto destroy;
