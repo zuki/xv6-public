@@ -21,9 +21,9 @@ struct superblock {
   uint bmapstart;    // 先頭の空きマップブロックのブロック番号
 };
 
-#define NDIRECT 12
+#define NDIRECT 11
 #define NINDIRECT (BSIZE / sizeof(uint))
-#define MAXFILE (NDIRECT + NINDIRECT)
+#define MAXFILE (NDIRECT + NINDIRECT + NINDIRECT * NINDIRECT)
 
 // オンディスク inode 構造体
 struct dinode {
@@ -32,7 +32,7 @@ struct dinode {
   short minor;          // マイナーデバイス番号 (T_DEV のみ)
   short nlink;          // ファイルシステム内のinodeへのリンクの数
   uint size;            // ファイルのサイズ（単位はバイト）
-  uint addrs[NDIRECT+1];   // データブロックアドレス
+  uint addrs[NDIRECT+2];   // データブロックアドレス
 };
 
 // ブロックあたりのinode数

@@ -373,6 +373,7 @@ static uint
 bmap(struct inode *ip, uint bn)
 {
   uint addr, *a;
+  uint idx1, idx2;
   struct buf *bp;
 
   if(bn < NDIRECT){
@@ -383,7 +384,7 @@ bmap(struct inode *ip, uint bn)
   bn -= NDIRECT;
 
   if(bn < NINDIRECT){
-    // 間接ブロックをロードする。必要であれば割り当てる。
+    // 単純間接ブロックをロードする。必要であれば割り当てる。
     if((addr = ip->addrs[NDIRECT]) == 0)
       ip->addrs[NDIRECT] = addr = balloc(ip->dev);
     bp = bread(ip->dev, addr);
@@ -395,6 +396,31 @@ bmap(struct inode *ip, uint bn)
     brelse(bp);
     return addr;
   }
+  bn -= NINDIRECT;
+
+  if(bn < NINDIRECT*NINDIRECT){
+    // 二重間接ブロックをロードする。必要であれば割り当てる。
+    if((addr = ip->addrs[NDIRECT+1]) == 0)
+      ip->addrs[NDIRECT+1] = addr = balloc(ip->dev);
+    idx1 = bn / 128;  // ip->addrs[NDIRECT+1]内のインデックス
+    idx2 = bn % 128;  // ip->addrs[NDIRECT+1][idex1]内のインデックス
+    bp = bread(ip->dev, addr);
+    a = (uint*)bp->data;
+    if((addr = a[idx1]) == 0){  // 二重間接の1段階目
+      a[idx1] = addr = balloc(ip->dev);
+      log_write(bp);
+    }
+    brelse(bp);
+    bp = bread(ip->dev, addr);
+    a = (uint*)bp->data;
+    if((addr = a[idx2]) == 0){  // 二重間接の2段階目
+      a[idx2] = addr = balloc(ip->dev);
+      log_write(bp);
+    }
+    brelse(bp);
+    return addr;
+  }
+
 
   panic("bmap: out of range");
 }
