@@ -46,6 +46,14 @@ main()
       exit();
     }
   }
+  close(fd);
+
+  printf(1, "read; ok\n");
+
+  if(unlink("big.file") < 0){
+    printf(2, "big: unlink error\n");
+    exit();
+  }
 
   printf(1, "done; ok\n");
 

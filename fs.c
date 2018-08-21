@@ -402,8 +402,8 @@ bmap(struct inode *ip, uint bn)
     // 二重間接ブロックをロードする。必要であれば割り当てる。
     if((addr = ip->addrs[NDIRECT+1]) == 0)
       ip->addrs[NDIRECT+1] = addr = balloc(ip->dev);
-    idx1 = bn / 128;  // ip->addrs[NDIRECT+1]内のインデックス
-    idx2 = bn % 128;  // ip->addrs[NDIRECT+1][idex1]内のインデックス
+    idx1 = bn / NINDIRECT;  // ip->addrs[NDIRECT+1]内のインデックス
+    idx2 = bn % NINDIRECT;  // ip->addrs[NDIRECT+1][idex1]内のインデックス
     bp = bread(ip->dev, addr);
     a = (uint*)bp->data;
     if((addr = a[idx1]) == 0){  // 二重間接の1段階目
@@ -435,7 +435,7 @@ itrunc(struct inode *ip)
 {
   int i, j;
   struct buf *bp;
-  uint *a;
+  uint *a, *b;
 
   for(i = 0; i < NDIRECT; i++){
     if(ip->addrs[i]){
@@ -454,6 +454,26 @@ itrunc(struct inode *ip)
     brelse(bp);
     bfree(ip->dev, ip->addrs[NDIRECT]);
     ip->addrs[NDIRECT] = 0;
+  }
+
+  if(ip->addrs[NDIRECT+1]){
+    bp = bread(ip->dev, ip->addrs[NDIRECT+1]);
+    a = (uint*)bp->data;
+    for(i = 0; j < NINDIRECT; i++) {
+      if (a[i]) {
+        brelse(bp);
+        bp = bread(ip->dev, a[i]);
+        b = (uint*)bp->data;
+        for(j = 0; j < NINDIRECT; j++){
+          if(b[j])
+            bfree(ip->dev, b[j]);
+        }
+        bfree(ip->dev, a[i]);
+      }
+    }
+    brelse(bp);
+    bfree(ip->dev, ip->addrs[NDIRECT+1]);
+    ip->addrs[NDIRECT+1] = 0;
   }
 
   ip->size = 0;
