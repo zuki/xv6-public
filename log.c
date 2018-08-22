@@ -67,16 +67,20 @@ initlog(int dev)
 
 // コミットしたブロックをログからその本来の場所にコピーする。
 static void
-install_trans(void)
+install_trans(int copy)
 {
   int tail;
+  struct buf *dbuf, *lbuf;
 
   for (tail = 0; tail < log.lh.n; tail++) {
-    struct buf *lbuf = bread(log.dev, log.start+tail+1); // ログブロックを読み込む
-    struct buf *dbuf = bread(log.dev, log.lh.block[tail]); // dstを読み込む
-    memmove(dbuf->data, lbuf->data, BSIZE);  // ブロックをdstにコピーする
+    dbuf = bread(log.dev, log.lh.block[tail]); // dstを読み込む
+    if (copy) {
+      lbuf = bread(log.dev, log.start+tail+1); // ログブロックを読み込む
+      memmove(dbuf->data, lbuf->data, BSIZE);  // ブロックをdstにコピーする
+    }
     bwrite(dbuf);  // dstからディスクに書き込む
-    brelse(lbuf);
+    if (copy)
+      brelse(lbuf);
     brelse(dbuf);
   }
 }
@@ -116,7 +120,7 @@ static void
 recover_from_log(void)
 {
   read_head();
-  install_trans(); // コミットされていたら、ログからディスクにコピーする
+  install_trans(1); // コミットされていたら、ログからディスクにコピーする
   log.lh.n = 0;
   write_head(); // ログをクリア
 }
@@ -195,7 +199,7 @@ commit()
   if (log.lh.n > 0) {
     write_log();     // 変更されたブロックをキャッシュからログに書き込む
     write_head();    // ヘッダをディスクに書き込む -- 本当のコミット
-    install_trans(); // 書き込み内容を本来の場所にコピーする
+    install_trans(0); // 書き込み内容を本来の場所にコピーする
     log.lh.n = 0;
     write_head();    // トランザクションをログから消去する
   }
