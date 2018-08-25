@@ -7,11 +7,11 @@
 char buf[512];
 
 void
-cat(FILE *fd)
+cat(FILE *f)
 {
   int n;
 
-  while((n = fread(buf, sizeof(char), sizeof(buf), fd)) > 0) {
+  while((n = fread(buf, sizeof(char), sizeof(buf), f)) > 0) {
     if (fwrite(buf, sizeof(char), n, stdout) != n) {
       printf("cat: write error\n");
       exit(1);
@@ -26,7 +26,7 @@ cat(FILE *fd)
 int
 main(int argc, char *argv[])
 {
-  FILE *fd;
+  FILE *f;
   int i;
 
   if(argc <= 1){
@@ -35,12 +35,12 @@ main(int argc, char *argv[])
   }
 
   for(i = 1; i < argc; i++){
-    if((fd = fopen(argv[i], 0)) < 0){
+    if((f = fopen(argv[i], "r")) == NULL){
       printf("cat: cannot open %s\n", argv[i]);
       exit(1);
     }
-    cat(fd);
-    fclose(fd);
+    cat(f);
+    fclose(f);
   }
   exit(0);
 }
