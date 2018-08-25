@@ -188,15 +188,14 @@ UPROGS=\
 	_init.o\
 	_echo.o\
 	_rm.o\
+	_wc.o\
 #	_forktest\
 #	_grep\
 #	_kill\
 #	_ln\
 #	_mkdir\
-#	_rm\
 #	_stressfs\
 #	_usertests\
-#	_wc\
 #	_zombie\
 #	_date\
 #	_alarmtest\
