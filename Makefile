@@ -186,16 +186,13 @@ UPROGS=\
 	_ls.o\
 	_sh.o\
 	_init.o\
-#	_echo\
+	_echo.o\
 #	_forktest\
 #	_grep\
-#	_init\
 #	_kill\
 #	_ln\
-#	_ls\
 #	_mkdir\
 #	_rm\
-#	_sh\
 #	_stressfs\
 #	_usertests\
 #	_wc\
