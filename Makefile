@@ -187,6 +187,7 @@ UPROGS=\
 	_sh.o\
 	_init.o\
 	_echo.o\
+	_rm.o\
 #	_forktest\
 #	_grep\
 #	_kill\
