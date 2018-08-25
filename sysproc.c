@@ -14,7 +14,7 @@ sys_fork(void)
 }
 
 int
-sys_exit(void)
+sys__exit(void)
 {
   exit();
   return 0;  // ここには来ない

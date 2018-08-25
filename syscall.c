@@ -86,7 +86,7 @@ extern int sys_chdir(void);
 extern int sys_close(void);
 extern int sys_dup(void);
 extern int sys_exec(void);
-extern int sys_exit(void);
+extern int sys__exit(void);
 extern int sys_fork(void);
 extern int sys_fstat(void);
 extern int sys_getpid(void);
@@ -109,7 +109,7 @@ extern int sys_alarm(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
-[SYS_exit]    sys_exit,
+[SYS__exit]   sys__exit,
 [SYS_wait]    sys_wait,
 [SYS_pipe]    sys_pipe,
 [SYS_read]    sys_read,
@@ -137,7 +137,7 @@ static int (*syscalls[])(void) = {
 /*
 static char *syscallnames[] = {
 [SYS_fork]    "fork",
-[SYS_exit]    "exit",
+[SYS__exit]   "_exit",
 [SYS_wait]    "wait",
 [SYS_pipe]    "pipe",
 [SYS_read]    "read",

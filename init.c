@@ -1,5 +1,6 @@
 // init: 最初のユーザレベルのプログラム
-
+#include <stdio.h>
+#include <stdlib.h>
 #include "types.h"
 #include "stat.h"
 #include "user.h"
@@ -20,18 +21,18 @@ main(void)
   dup(0);  // stderr
 
   for(;;){
-    printf(1, "init: starting sh\n");
+    printf("init: starting sh\n");
     pid = fork();
     if(pid < 0){
-      printf(1, "init: fork failed\n");
-      exit();
+      printf("init: fork failed\n");
+      exit(1);
     }
     if(pid == 0){
       exec("sh", argv);
-      printf(1, "init: exec sh failed\n");
-      exit();
+      printf("init: exec sh failed\n");
+      exit(1);
     }
     while((wpid=wait()) >= 0 && wpid != pid)
-      printf(1, "zombie!\n");
+      printf("zombie!\n");
   }
 }
