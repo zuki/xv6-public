@@ -190,6 +190,7 @@ UPROGS=\
 	_rm.o\
 	_wc.o\
 	_mkdir.o\
+	_pwd.o\
 #	_forktest\
 #	_grep\
 #	_kill\
