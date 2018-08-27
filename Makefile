@@ -157,8 +157,8 @@ vectors.S: vectors.pl
 #at.o: cat.c types.h stat.h user.h
 #	$(CC) $(CFLAGS) $(USER_CFLAGS) -I$(NEWLIB_INCLUDE) -c -o cat.o cat.c
 
-$(UPROGS_NAMES) _%: %.o
-	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o $@ $< -L$(NEWLIB_LIB) -lc -lm -lnosys
+$(UPROGS_NAMES) _%: %.o ulib.o
+	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o $@ $< -L. ulib.o -L$(NEWLIB_LIB) -lc -lm -lnosys
 #	$(OBJDUMP) -S $@ > $*.asm
 #	$(OBJDUMP) -t $@ | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $*.sym
 
@@ -217,6 +217,9 @@ $(filter $(SOJBS),$(OBJS)): %.o: %.S
 	$(CC) -c $(CFLAGS) $< -o $@
 
 $(filter-out $(SOBJS),$(OBJS)): %.o: %.c
+	$(CC) -c $(CFLAGS) $< -o $@
+
+ulib.o: ulib.c stat.h user.h
 	$(CC) -c $(CFLAGS) $< -o $@
 
 clean:
