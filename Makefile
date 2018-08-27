@@ -191,6 +191,7 @@ UPROGS=\
 	_wc.o\
 	_mkdir.o\
 	_pwd.o\
+	_uniq.o\
 #	_forktest\
 #	_grep\
 #	_kill\
@@ -207,8 +208,8 @@ UPROGS=\
 UPROGS_OBJS = $(subst _,,$(UPROGS))
 UPROGS_NAMES = $(basename $(UPROGS))
 
-fs.img: mkfs README $(UPROGS_NAMES)
-	./mkfs fs.img README $(UPROGS_NAMES)
+fs.img: mkfs README EXAMPLE $(UPROGS_NAMES)
+	./mkfs fs.img README EXAMPLE $(UPROGS_NAMES)
 
 -include *.d
 
