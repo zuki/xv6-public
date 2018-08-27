@@ -339,12 +339,21 @@ sys_open(void)
     end_op();
     return -1;
   }
+
+  f->off = 0;
+  if (ip->type == T_FILE) {
+    if (omode == (O_WRONLY|O_CREATE|O_APPEND))
+      f->off = ip->size;
+    else if (omode == (O_WRONLY|O_CREATE)) {
+      ip->size = 0;
+      iupdate(ip);
+    }
+  }
   iunlock(ip);
   end_op();
 
   f->type = FD_INODE;
   f->ip = ip;
-  f->off = 0;
   f->readable = !(omode & O_WRONLY);
   f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
   return fd;
