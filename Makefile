@@ -189,6 +189,7 @@ UPROGS=\
 	_echo.o\
 	_rm.o\
 	_wc.o\
+	_mkdir.o\
 #	_forktest\
 #	_grep\
 #	_kill\
