@@ -195,6 +195,7 @@ UPROGS=\
 	_grep.o\
 	_kill.o\
 	_ln.o\
+	_sort.o\
 #	_forktest\
 #	_stressfs\
 #	_usertests\
