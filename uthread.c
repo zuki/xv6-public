@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include "types.h"
 #include "stat.h"
 #include "user.h"
@@ -57,8 +59,8 @@ thread_schedule(void)
 
   // 実行可能なスレッドが一つもない場合は終了
   if (next_thread == 0) {
-    printf(2, "thread_schedule: no runnable threads\n");
-    exit();
+    printf("thread_schedule: no runnable threads\n");
+    exit(0);
   }
 
   // カレントスレッドと次に実行するスレッドが異なる場合はスレッドを切り替える */
@@ -95,12 +97,12 @@ static void
 mythread(void)
 {
   int i;
-  printf(1, "my thread running\n");
+  printf("my thread running\n");
   for (i = 0; i < 100; i++) {
-    printf(1, "my thread 0x%x\n", (int) current_thread);
+    printf("my thread 0x%x\n", (int) current_thread);
     thread_yield();
   }
-  printf(1, "my thread: exit\n");
+  printf("my thread: exit\n");
   current_thread->state = FREE;
   thread_schedule();
 }

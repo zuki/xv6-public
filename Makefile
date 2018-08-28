@@ -165,11 +165,11 @@ $(UPROGS_NAMES) _%: %.o ulib.o
 #_forktest: forktest.o $(ULIB)
 # forktest has less library code linked in - needs to be small
 # in order to be able to max out the proc table.
-#	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o _forktest forktest.o ulib.o usys.o
+#$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o _forktest forktest.o ulib.o usys.o
 #	$(OBJDUMP) -S _forktest > forktest.asm
 
-#_uthread: uthread.o uthread_switch.o
-#	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o _uthread uthread.o uthread_switch.o $(ULIB)
+_uthread: uthread.o uthread_switch.o
+	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o _uthread uthread.o uthread_switch.o  -L$(NEWLIB_LIB) -lc -lnosys
 #	$(OBJDUMP) -S _uthread > uthread.asm
 
 mkfs: mkfs.c fs.h
@@ -208,10 +208,16 @@ UPROGS=\
 UPROGS_OBJS = $(subst _,,$(UPROGS))
 UPROGS_NAMES = $(basename $(UPROGS))
 
-fs.img: mkfs README EXAMPLE $(UPROGS_NAMES)
-	./mkfs fs.img README EXAMPLE $(UPROGS_NAMES)
+fs.img: mkfs README EXAMPLE $(UPROGS_NAMES) _uthread
+	./mkfs fs.img README EXAMPLE $(UPROGS_NAMES) _uthread
 
 -include *.d
+
+uthread.o: uthread.c
+	$(CC) -c $(CFLAGS) $(USER_CFLAGS) -I$(NEWLIB_INCLUDE) $< -o $@
+
+uthread_switch.o: uthread_switch.S
+	$(CC) -c $(CFLAGS) $< -o $@
 
 $(UPROGS_OBJS): %.o: %.c
 	$(CC) -c $(CFLAGS) $(USER_CFLAGS) -I$(NEWLIB_INCLUDE) $< -o $@
