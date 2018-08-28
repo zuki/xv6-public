@@ -97,36 +97,10 @@ trap(struct trapframe *tf)
       panic("trap");
     }
     if (tf->trapno == T_PGFLT) {
-      uint a, oldsz, newsz;
-      char *mem;
-
-      oldsz = rcr2();
-      newsz = myproc()->sz;
-      if (oldsz >= KERNBASE)  // for uthread
+      if (allocuvm(myproc()->pgdir, PGROUNDDOWN(rcr2()), myproc()->sz) == 0) {
         goto destroy;
-      if (newsz >= oldsz) {
-        if(newsz >= KERNBASE)
-          goto destroy;
-        a = PGROUNDDOWN(oldsz);
-        for(; a < newsz; a += PGSIZE){
-          mem = kalloc();
-          if(mem == 0){
-            cprintf("allocuvm out of memory\n");
-            deallocuvm(myproc()->pgdir, newsz, oldsz);
-            goto destroy;
-          }
-          memset(mem, 0, PGSIZE);
-          if (mappages(myproc()->pgdir, (char*)a, PGSIZE, V2P(mem), PTE_W|PTE_U) < 0){
-            cprintf("allocuvm out of memory (2)\n");
-            deallocuvm(myproc()->pgdir, newsz, oldsz);
-            kfree(mem);
-            goto destroy;
-          }
-        }
-      } else {
-        if ((newsz = deallocuvm(myproc()->pgdir, newsz, oldsz)) == 0)
-          goto destroy;
       }
+      switchuvm(myproc());
       break;
     }
 destroy:
