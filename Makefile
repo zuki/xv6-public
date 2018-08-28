@@ -192,17 +192,15 @@ UPROGS=\
 	_mkdir.o\
 	_pwd.o\
 	_uniq.o\
+	_grep.o\
 #	_forktest\
-#	_grep\
 #	_kill\
 #	_ln\
-#	_mkdir\
 #	_stressfs\
 #	_usertests\
 #	_zombie\
 #	_date\
 #	_alarmtest\
-#	_uthread\
 #	_big\
 
 UPROGS_OBJS = $(subst _,,$(UPROGS))
