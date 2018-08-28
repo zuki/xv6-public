@@ -194,9 +194,8 @@ UPROGS=\
 	_uniq.o\
 	_grep.o\
 	_kill.o\
+	_ln.o\
 #	_forktest\
-#	_kill\
-#	_ln\
 #	_stressfs\
 #	_usertests\
 #	_zombie\
