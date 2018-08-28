@@ -193,6 +193,7 @@ UPROGS=\
 	_pwd.o\
 	_uniq.o\
 	_grep.o\
+	_kill.o\
 #	_forktest\
 #	_kill\
 #	_ln\
