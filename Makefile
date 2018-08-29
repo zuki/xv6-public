@@ -1,4 +1,5 @@
-OBJS = \
+# kernel objects
+KOBJS = \
 	bio.o\
 	console.o\
 	exec.o\
@@ -28,11 +29,55 @@ OBJS = \
 	vectors.o\
 	vm.o\
 
+# kernel objects made from *.S
+KSOBJS = swtch.o trapasm.o vectors.o
+
+# kernel objects made from *.c
+KCOBJS = $(filter-out $(KSOBJS),$(KOBJS))
+
+# user library objects
+ULIB = ulib.o usys.o printf.o umalloc.o
+
+# user library made from *.c
+UCLIB = $(filter-out usys.o,$(ULIB))
+
+# user objects using user library
+UPROGS=\
+	_cat.o\
+	_echo.o\
+	_grep.o\
+	_init.o\
+	_kill.o\
+	_ln.o\
+	_ls.o\
+	_mkdir.o\
+	_rm.o\
+	_sh.o\
+	_stressfs.o\
+	_usertests.o\
+	_wc.o\
+	_zombie.o\
+	_date.o\
+	_alarmtest.o\
+	_big.o\
+
+UPROGS_OBJS = $(subst _,,$(UPROGS))
+UPROGS_NAMES = $(basename $(UPROGS))
+
+# user objects using newlib library
+LPROGS =
+#	_prog.o
+
+LPROGS_OBJS = $(subst _,,$(LPROGS))
+LPROGS_NAMES = $(basename $(LPROGS))
+
+OBJS_FROMC = $(KCOBJS) $(UCLIB) $(UPROGS_OBJS)
+
 # Cross-compiling (e.g., on Mac OS X)
-#TOOLPREFIX = i386-jos-elf
+TOOLPREFIX = i386-jos-elf-
 
 # Using native tools (e.g., on X86 Linux)
-TOOLPREFIX =
+#TOOLPREFIX =
 
 # Try to infer the correct TOOLPREFIX if not set
 ifndef TOOLPREFIX
@@ -83,6 +128,11 @@ ASFLAGS = -m32 -gdwarf-2 -Wa,-divide
 # FreeBSD ld wants ``elf_i386_fbsd''
 LDFLAGS += -m $(shell $(LD) -V | grep elf_i386 2>/dev/null | head -n 1)
 
+NEWLIB = /usr/local/i386-elf-xv6
+NEWLIB_LIB = $(NEWLIB)/lib
+NEWLIB_INCLUDE = $(NEWLIB)/include
+NEWLIB_CFLAGS = -static-libgcc -nostartfiles -nostdlib -ffreestanding -nodefaultlibs -fno-builtin
+
 xv6.img: bootblock kernel fs.img
 	dd if=/dev/zero of=xv6.img count=10000
 	dd if=bootblock of=xv6.img conv=notrunc
@@ -113,8 +163,8 @@ initcode: initcode.S
 	$(OBJCOPY) -S -O binary initcode.out initcode
 	$(OBJDUMP) -S initcode.o > initcode.asm
 
-kernel: $(OBJS) entry.o entryother initcode kernel.ld
-	$(LD) $(LDFLAGS) -T kernel.ld -o kernel entry.o $(OBJS) -b binary initcode entryother
+kernel: $(KOBJS) entry.o entryother initcode kernel.ld
+	$(LD) $(LDFLAGS) -T kernel.ld -o kernel entry.o $(KOBJS) -b binary initcode entryother
 	$(OBJDUMP) -S kernel > kernel.asm
 	$(OBJDUMP) -t kernel | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > kernel.sym
 
@@ -124,22 +174,25 @@ kernel: $(OBJS) entry.o entryother initcode kernel.ld
 # exploring disk buffering implementations, but it is
 # great for testing the kernel on real hardware without
 # needing a scratch disk.
-MEMFSOBJS = $(filter-out ide.o,$(OBJS)) memide.o
+MEMFSOBJS = $(filter-out ide.o,$(KOBJS)) memide.o
 kernelmemfs: $(MEMFSOBJS) entry.o entryother initcode kernel.ld fs.img
 	$(LD) $(LDFLAGS) -T kernel.ld -o kernelmemfs entry.o  $(MEMFSOBJS) -b binary initcode entryother fs.img
 	$(OBJDUMP) -S kernelmemfs > kernelmemfs.asm
 	$(OBJDUMP) -t kernelmemfs | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > kernelmemfs.sym
 
-tags: $(OBJS) entryother.S _init
-	etags *.S *.c
+#tags: $(OBJS) entryother.S _init
+#	etags *.S *.c
 
 vectors.S: vectors.pl
 	perl vectors.pl > vectors.S
 
-ULIB = ulib.o usys.o printf.o umalloc.o
-
-_%: %.o $(ULIB)
+$(UPROGS_NAMES): _%: %.o $(ULIB)
 	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o $@ $^
+	$(OBJDUMP) -S $@ > $*.asm
+	$(OBJDUMP) -t $@ | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $*.sym
+
+$(LPROGS_NAMES): _%: %.o
+	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o $@ $< -L. ulib.o -L$(NEWLIB_LIB) -lc -lm -lnosys
 	$(OBJDUMP) -S $@ > $*.asm
 	$(OBJDUMP) -t $@ | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $*.sym
 
@@ -162,31 +215,19 @@ mkfs: mkfs.c fs.h
 # http://www.gnu.org/software/make/manual/html_node/Chained-Rules.html
 .PRECIOUS: %.o
 
-UPROGS=\
-	_cat\
-	_echo\
-	_forktest\
-	_grep\
-	_init\
-	_kill\
-	_ln\
-	_ls\
-	_mkdir\
-	_rm\
-	_sh\
-	_stressfs\
-	_usertests\
-	_wc\
-	_zombie\
-	_date\
-	_alarmtest\
-	_uthread\
-	_big\
-
-fs.img: mkfs README $(UPROGS)
-	./mkfs fs.img README $(UPROGS)
+fs.img: mkfs README $(UPROGS_NAMES) $(LPROGS_NAMES) _forktest _uthread
+	./mkfs fs.img README $(UPROGS_NAMES) $(LPROGS_NAMES) _forktest _uthread
 
 -include *.d
+
+$(KSOBJS) usys.o uthread_switch.o: %.o: %.S
+	$(CC) -c $(CFLAGS) $< -o $@
+
+$(OBJS_FROMC) uthread.o forktest.o: %.o: %.c
+	$(CC) -c $(CFLAGS) $< -o $@
+
+$(LPROGS_OBJS): %.o: %.c
+	$(CC) -c $(CFLAGS) $(USER_CFLAGS) -I$(NEWLIB_INCLUDE) $< -o $@
 
 clean:
 	rm -f *.tex *.dvi *.idx *.aux *.log *.ind *.ilg \
