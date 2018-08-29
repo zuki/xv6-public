@@ -20,9 +20,9 @@
 // Disk layout:
 // [ boot block | sb block | log | inode blocks | free bit map | data blocks ]
 
-int nbitmap = FSSIZE/(BSIZE*8) + 1;
-int ninodeblocks = NINODES / IPB + 1;
-int nlog = LOGSIZE;
+int nbitmap = FSSIZE/(BSIZE*8) + 1;       // 20_000 / (512 * 8) + 1
+int ninodeblocks = NINODES / IPB + 1;     // 200 / ブロックあたりのinode数 + 1
+int nlog = LOGSIZE;                       // 30
 int nmeta;    // Number of meta blocks (boot, sb, nlog, inode, bitmap)
 int nblocks;  // Number of data blocks
 
@@ -102,6 +102,7 @@ main(int argc, char *argv[])
   sb.inodestart = xint(2+nlog);
   sb.bmapstart = xint(2+nlog+ninodeblocks);
 
+  // nmeta 63 (boot, super, log blocks 30 inode blocks 26, bitmap blocks 5) blocks 19937 total 20000
   printf("nmeta %d (boot, super, log blocks %u inode blocks %u, bitmap blocks %u) blocks %d total %d\n",
          nmeta, nlog, ninodeblocks, nbitmap, nblocks, FSSIZE);
 
@@ -261,6 +262,8 @@ iappend(uint inum, void *xp, int n)
   char buf[BSIZE];
   uint indirect[NINDIRECT];
   uint x;
+  uint bn, idx1, idx2;
+  uint indirect2[NINDIRECT];
 
   rinode(inum, &din);
   off = xint(din.size);
@@ -268,21 +271,43 @@ iappend(uint inum, void *xp, int n)
   while(n > 0){
     fbn = off / BSIZE;
     assert(fbn < MAXFILE);
-    if(fbn < NDIRECT){
+    if (fbn < NDIRECT) {
       if(xint(din.addrs[fbn]) == 0){
         din.addrs[fbn] = xint(freeblock++);
       }
       x = xint(din.addrs[fbn]);
-    } else {
+    } else if (fbn < NINDIRECT){
+      bn = fbn - NDIRECT;
       if(xint(din.addrs[NDIRECT]) == 0){
         din.addrs[NDIRECT] = xint(freeblock++);
       }
       rsect(xint(din.addrs[NDIRECT]), (char*)indirect);
-      if(indirect[fbn - NDIRECT] == 0){
-        indirect[fbn - NDIRECT] = xint(freeblock++);
+      if(indirect[bn] == 0){
+        indirect[bn] = xint(freeblock++);
         wsect(xint(din.addrs[NDIRECT]), (char*)indirect);
       }
-      x = xint(indirect[fbn-NDIRECT]);
+      x = xint(indirect[bn]);
+    } else if (fbn < NINDIRECT*NINDIRECT) {
+      bn = fbn - NDIRECT - NINDIRECT;
+      if (xint(din.addrs[NDIRECT+1]) == 0){
+        din.addrs[NDIRECT+1] = xint(freeblock++);
+      }
+      idx1 = fbn / NINDIRECT;
+      idx2 = fbn % NINDIRECT;
+      rsect(xint(din.addrs[NDIRECT+1]), (uint *)indirect);
+      if(indirect[idx1] == 0) {
+        indirect[idx1] = xint(freeblock++);
+        wsect(xint(din.addrs[NDIRECT+1]), (uint *)indirect);
+      }
+      rsect(xint(indirect[idx1]), (char *)indirect2);
+      if(indirect2[idx2] == 0) {
+        indirect2[idx2] = xint(freeblock++);
+        wsect(xint(indirect[idx1]), (char*)indirect2);
+      }
+      x = xint(indirect[idx2]);
+    } else {
+      perror("iappend");
+      exit(1);
     }
     n1 = min(n, (fbn + 1) * BSIZE - off);
     rsect(x, buf);
