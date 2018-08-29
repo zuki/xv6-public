@@ -60,6 +60,7 @@ UPROGS=\
 	_date.o\
 	_alarmtest.o\
 	_big.o\
+	_sort.o\
 
 UPROGS_OBJS = $(subst _,,$(UPROGS))
 UPROGS_NAMES = $(basename $(UPROGS))
@@ -215,8 +216,8 @@ mkfs: mkfs.c fs.h
 # http://www.gnu.org/software/make/manual/html_node/Chained-Rules.html
 .PRECIOUS: %.o
 
-fs.img: mkfs README $(UPROGS_NAMES) $(LPROGS_NAMES) _forktest _uthread
-	./mkfs fs.img README $(UPROGS_NAMES) $(LPROGS_NAMES) _forktest _uthread
+fs.img: mkfs README EXAMPLE $(UPROGS_NAMES) $(LPROGS_NAMES) _forktest _uthread
+	./mkfs fs.img README EXAMPLE $(UPROGS_NAMES) $(LPROGS_NAMES) _forktest _uthread
 
 -include *.d
 
