@@ -14,7 +14,7 @@
  *   If any of these flags are used in [opts], then they override all global
  *   ordering for this field.
  *
- *   I/O control flags are:
+ *   I/O atoissrol flags are:
  *   -u : Print uniq lines only once.
  *   -c : Check if files are sorted in order.
  *   -m : Merge already sorted files.
@@ -129,6 +129,7 @@ char USAGE[] = "Usage: sort [-funbirdcmt'x'] [+beg_pos [-end_pos]] [-o outfile] 
 
 /* Forward declarations */
 void adjust_options(FIELD *);
+int atois(char *);
 void build_field(char *, FIELD *, char *);
 void catch(void);
 void check_file(int, char *);
@@ -155,9 +156,6 @@ void sort_table(int);
 void uniq_lines(MERGE *);
 extern void free(void *);
 char * msbrk(int);
-int strcmp(char *, char *);
-int strlen(char *);
-extern int xv6_stat(char *, struct stat *);
 extern void exit(int);
 
 /* Table of all chars. 0 means no special meaning. */
@@ -252,9 +250,9 @@ get_opts(register char *ptr, register FIELD *field)
   }
 }
 
-/* Atoi() converts a string to an int. */
+/* atois() converts a string to an int. */
 int
-atoi(register char *ptr)
+atois(register char *ptr)
 {
   register int num = 0;    /* Accumulator */
 
@@ -282,9 +280,9 @@ new_field(register FIELD *field, int *offset, BOOL beg_fl)
   ptr++;
 
   if (beg_fl)
-    field->beg_field = atoi(ptr);  /* Assign int of first field */
+    field->beg_field = atois(ptr);  /* Assign int of first field */
   else
-    field->end_field = atoi(ptr);
+    field->end_field = atois(ptr);
 
   while (table[(int)*ptr] & DIGIT)  /* Skip all digits */
     ptr++;
@@ -292,7 +290,7 @@ new_field(register FIELD *field, int *offset, BOOL beg_fl)
   if (*ptr == '.') {    /* Check for offset */
     ptr++;
     if (beg_fl)
-      field->beg_pos = atoi(ptr);
+      field->beg_pos = atois(ptr);
     else
       field->end_pos = atoi(ptr);
     while (table[(int)*ptr] & DIGIT)  /* Skip digits */

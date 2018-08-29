@@ -7,14 +7,6 @@
 char buf[BUFSIZE];
 
 extern void exit(int);
-int strlen(char *);
-
-void
-print(char *message, char *arg) {
-  write(1, message, strlen(message));
-  if (arg) write(1, arg, strlen(arg));
-  write(1, "\n", 1);
-}
 
 void
 cat(int fd)
@@ -23,12 +15,12 @@ cat(int fd)
 
   while((n = read(fd, buf, BUFSIZE)) > 0) {
     if (write(1, buf, n) != n) {
-      print("cat: write error", 0);
+      xv6_printf(1, "cat: write error");
       exit(1);
     }
   }
   if(n < 0){
-    print("cat: read error", 0);
+    xv6_printf(1, "cat: read error");
     exit(1);
   }
 }
@@ -46,7 +38,7 @@ main(int argc, char *argv[])
 
   for(i = 1; i < argc; i++){
     if((fd = open(argv[i], O_RDONLY)) < 0){
-      print("cat: cannot open ", argv[i]);
+      xv6_printf(1, "cat: cannot open ", argv[i]);
       exit(1);
     }
     cat(fd);

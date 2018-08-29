@@ -27,3 +27,14 @@ int date(struct rtcdate*);
 int dup2(int, int);
 int alarm(int, void(*)());
 int lseek(int, int, int);
+
+char* strcpy(char*, const char*);
+void *memmove(void*, const void*, size_t);
+char* strchr(const char*, int c);
+int strcmp(const char*, const char*);
+size_t strlen(const char*);
+void* memset(void*, int, size_t);
+int atoi(const char*);
+char* xv6_gets(char*, int max);
+int xv6_stat(char *, struct stat *);
+void xv6_printf(int, char *, ...);

@@ -1,7 +1,4 @@
 // シェル
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "types.h"
 #include "user.h"
 #include "fcntl.h"
@@ -54,6 +51,8 @@ struct backcmd {
 int fork1(void);  // エラー時にpanicを呼び出すfork
 void panic(char*);
 struct cmd *parsecmd(char*);
+extern void exit(int);
+extern void *malloc(int);
 
 // cmdを実行する。復帰しない。
 void
@@ -78,14 +77,14 @@ runcmd(struct cmd *cmd)
     if(ecmd->argv[0] == 0)
       exit(0);
     exec(ecmd->argv[0], ecmd->argv);
-    fprintf(stderr, "exec %s failed\n", ecmd->argv[0]);
+    xv6_printf(2, "exec %s failed\n", ecmd->argv[0]);
     break;
 
   case REDIR:
     rcmd = (struct redircmd*)cmd;
     close(rcmd->fd);
     if(open(rcmd->file, rcmd->mode) < 0){
-      fprintf(stderr, "open %s failed\n", rcmd->file);
+      xv6_printf(2, "open %s failed\n", rcmd->file);
       exit(1);
     }
     runcmd(rcmd->cmd);
@@ -133,15 +132,15 @@ runcmd(struct cmd *cmd)
 int
 getcmd(char *buf, int nbuf)
 {
-  fprintf(stderr, "$ ");
+  xv6_printf(2, "$ ");
   memset(buf, 0, nbuf);
-  fgets(buf, nbuf, stdin);
+  xv6_gets(buf, nbuf);
   if(buf[0] == 0) // EOF
     return -1;
   return 0;
 }
 
-int
+void
 main(void)
 {
   static char buf[100];
@@ -161,7 +160,7 @@ main(void)
       // chdir は子プロセスではなく、親プロセスから呼ばれなければならない。
       buf[strlen(buf)-1] = 0;  // \nを捨てる
       if(chdir(buf+3) < 0)
-        fprintf(stderr, "cannot cd %s\n", buf+3);
+        xv6_printf(2, "cannot cd %s\n", buf+3);
       continue;
     }
     if(fork1() == 0)
@@ -174,7 +173,7 @@ main(void)
 void
 panic(char *s)
 {
-  printf("%s\n", s);
+  xv6_printf(2, "%s\n", s);
   exit(1);
 }
 
@@ -269,7 +268,7 @@ gettoken(char **ps, char *es, char **q, char **eq)
   int ret;
 
   s = *ps;
-  while(s < es && strchr(whitespace, *s))  // ホワイトスペースを読み飛ばす
+  while(s < es && strchr(whitespace, (int)*s))  // ホワイトスペースを読み飛ばす
     s++;
   if(q)
     *q = s;
@@ -294,14 +293,14 @@ gettoken(char **ps, char *es, char **q, char **eq)
     break;
   default:
     ret = 'a';       // ホワイトスペースでもシンボルでもない文字を読み飛ばす
-    while(s < es && !strchr(whitespace, *s) && !strchr(symbols, *s))
+    while(s < es && !strchr(whitespace, (int)*s) && !strchr(symbols, (int)*s))
       s++;
     break;
   }
   if(eq)
     *eq = s;
 
-  while(s < es && strchr(whitespace, *s))  // ホワイトスペースを読み飛ばす
+  while(s < es && strchr(whitespace, (int)*s))  // ホワイトスペースを読み飛ばす
     s++;
   *ps = s;
   return ret;  // シンボルは自身（">>"は'+'）, 文字は"a"を返す。*psは次の有効文字を指す
@@ -313,10 +312,10 @@ peek(char **ps, char *es, char *toks)
   char *s;
 
   s = *ps;
-  while(s < es && strchr(whitespace, *s))  // ホワイトスペースを読み飛ばす
+  while(s < es && strchr(whitespace, (int)*s))  // ホワイトスペースを読み飛ばす
     s++;
   *ps = s;
-  return *s && strchr(toks, *s);           // 先頭文字がtoksか？
+  return *s && strchr(toks, (int)*s);           // 先頭文字がtoksか？
 }
 
 struct cmd *parseline(char**, char*);
@@ -334,7 +333,7 @@ parsecmd(char *s)
   cmd = parseline(&s, es);
   peek(&s, es, "");
   if(s != es){
-    fprintf(stderr, "leftovers: %s\n", s);
+    xv6_printf(2, "leftovers: %s\n", s);
     panic("syntax");
   }
   nulterminate(cmd);

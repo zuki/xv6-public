@@ -11,5 +11,3 @@ struct stat {
   short nlink; // ファイルへのリンク数
   uint size;   // ファイルのサイズ（単位はバイト）
 };
-
-int xv6_stat(char *, struct stat *);

@@ -227,7 +227,7 @@ $(filter $(SOJBS),$(OBJS)): %.o: %.S
 $(filter-out $(SOBJS),$(OBJS)): %.o: %.c
 	$(CC) -c $(CFLAGS) $< -o $@
 
-ulib.o: ulib.c stat.h user.h
+ulib.o: ulib.c types.h stat.h user.h
 	$(CC) -c $(CFLAGS) $< -o $@
 
 clean:

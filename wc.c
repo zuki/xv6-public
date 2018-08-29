@@ -19,7 +19,7 @@ wc(FILE *f, char *name)
       c++;
       if(buf[i] == '\n')
         l++;
-      if(strchr(" \r\t\n\v", buf[i]))
+      if(strchr(" \r\t\n\v", (int)buf[i]))
         inword = 0;
       else if(!inword){
         w++;
