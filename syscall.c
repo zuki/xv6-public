@@ -106,6 +106,7 @@ extern int sys_uptime(void);
 extern int sys_date(void);
 extern int sys_dup2(void);
 extern int sys_alarm(void);
+extern int sys_lseek(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -132,6 +133,7 @@ static int (*syscalls[])(void) = {
 [SYS_date]   sys_date,
 [SYS_dup2]   sys_dup2,
 [SYS_alarm]   sys_alarm,
+[SYS_lseek]   sys_lseek,
 };
 
 /*
@@ -160,6 +162,7 @@ static char *syscallnames[] = {
 [SYS_date]   "date",
 [SYS_dup2]   "dup2",
 [SYS_alarm]   "alarm",
+[SYS_lseek]   "lseek",
 };
 */
 
