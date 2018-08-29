@@ -66,8 +66,8 @@ UPROGS_OBJS = $(subst _,,$(UPROGS))
 UPROGS_NAMES = $(basename $(UPROGS))
 
 # user objects using newlib library
-LPROGS =
-#	_prog.o
+LPROGS = \
+	_uniq.o\
 
 LPROGS_OBJS = $(subst _,,$(LPROGS))
 LPROGS_NAMES = $(basename $(LPROGS))
