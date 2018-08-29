@@ -1,3 +1,7 @@
+#define SEEK_SET 0
+#define SEEK_CUR 1
+#define SEEK_END 2
+
 struct file {
   enum { FD_NONE, FD_PIPE, FD_INODE } type;
   int ref; // 参照カウント

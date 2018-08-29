@@ -84,6 +84,56 @@ sys_dup2(void)
 }
 
 int
+sys_lseek(void)
+{
+  struct file *f;         // 引数1でfdとして指定
+  int offset;             // 引数2で指定
+  int whence;             // 引数3で指定
+  int size;               // ファイルサイズ（とりあえずファイルサイズに収まらない場合はエラー）
+  struct inode *ip;
+
+  if(argfd(0, 0, &f) < 0 || argint(1, &offset) < 0 || argint(2, &whence) < 0)
+    return -1;
+
+  ip = f->ip;
+  ilock(ip);
+  if (ip->type != T_FILE) {
+    iunlock(ip);
+    return -1;
+  }
+
+  size = ip->size;
+  switch (whence) {
+    case SEEK_SET:
+      if (offset < 0 || offset > size) {
+        iunlock(ip);
+        return -1;
+      }
+      f->off = offset;
+      break;
+    case SEEK_CUR:
+      if (f->off + offset < 0 || f->off + offset > size) {
+        iunlock(ip);
+        return -1;
+      }
+      f->off = f->off + offset;
+      break;
+    case SEEK_END:
+      if (size + offset < 0 || size + offset > size) {
+        iunlock(ip);
+        return -1;
+      }
+      f->off = size + offset;
+      break;
+    default:
+      iunlock(ip);
+      return -1;
+  }
+  iunlock(ip);
+  return 0;
+}
+
+int
 sys_read(void)
 {
   struct file *f;         // 引数1でfdとして指定
