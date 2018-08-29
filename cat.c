@@ -1,46 +1,56 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include "types.h"
-#include "stat.h"
+#include "fcntl.h"
 #include "user.h"
 
-char buf[512];
+#define BUFSIZE 412
+
+char buf[BUFSIZE];
+
+extern void exit(int);
+int strlen(char *);
 
 void
-cat(FILE *f)
+print(char *message, char *arg) {
+  write(1, message, strlen(message));
+  if (arg) write(1, arg, strlen(arg));
+  write(1, "\n", 1);
+}
+
+void
+cat(int fd)
 {
   int n;
 
-  while((n = fread(buf, sizeof(char), sizeof(buf), f)) > 0) {
-    if (fwrite(buf, sizeof(char), n, stdout) != n) {
-      printf("cat: write error\n");
+  while((n = read(fd, buf, BUFSIZE)) > 0) {
+    if (write(1, buf, n) != n) {
+      print("cat: write error", 0);
       exit(1);
     }
   }
   if(n < 0){
-    printf("cat: read error\n");
+    print("cat: read error", 0);
     exit(1);
   }
 }
 
-int
+void
 main(int argc, char *argv[])
 {
-  FILE *f;
+  int fd;
   int i;
 
   if(argc <= 1){
-    cat(stdin);
+    cat(0);
     exit(0);
   }
 
   for(i = 1; i < argc; i++){
-    if((f = fopen(argv[i], "r")) == NULL){
-      printf("cat: cannot open %s\n", argv[i]);
+    if((fd = open(argv[i], O_RDONLY)) < 0){
+      print("cat: cannot open ", argv[i]);
       exit(1);
     }
-    cat(f);
-    fclose(f);
+    cat(fd);
+    close(fd);
   }
   exit(0);
 }
