@@ -31,8 +31,8 @@
  *   A missing -a.b means the rest of the line.
  */
 /*#include <sys/types.h>
-#include <fcntl.h> */
-#include <string.h>
+#include <fcntl.h>
+#include <string.h> */
 #include "types.h"
 #include "user.h"
 #include "spinlock.h"
@@ -155,6 +155,8 @@ void sort_table(int);
 void uniq_lines(MERGE *);
 extern void free(void *);
 char * msbrk(int);
+int strcmp(char *, char *);
+int strlen(char *);
 extern int xv6_stat(char *, struct stat *);
 extern void exit(int);
 
