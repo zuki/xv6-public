@@ -165,6 +165,7 @@ UPROGS=\
 	_init\
 	_ls\
 	_sh\
+	_vi\
 	_cat\
 #	_echo\
 #	_forktest\
