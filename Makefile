@@ -165,7 +165,7 @@ UPROGS=\
 	_init\
 	_ls\
 	_sh\
-#	_cat\
+	_cat\
 #	_echo\
 #	_forktest\
 #	_grep\
