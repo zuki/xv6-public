@@ -1,4 +1,4 @@
-#include <xv6/param.h>
+#include "param.h"
 #include "types.h"
 #include <sys/stat.h>
 #include "user.h"

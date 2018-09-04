@@ -1,7 +1,7 @@
 // スリープロック。
 #include "types.h"
 #include "defs.h"
-#include <xv6/param.h>
+#include "param.h"
 #include "x86.h"
 #include "memlayout.h"
 #include "mmu.h"

@@ -5,7 +5,7 @@
 #include "types.h"
 #include "file.h"
 #include <sys/ioctl.h>
-#include <xv6/param.h>
+#include "param.h"
 #include <xv6/fs.h>
 #include <termios.h>
 #include "defs.h"

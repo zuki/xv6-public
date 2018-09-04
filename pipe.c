@@ -1,6 +1,6 @@
 #include "types.h"
 #include "defs.h"
-#include <xv6/param.h>
+#include "param.h"
 #include "mmu.h"
 #include "proc.h"
 #include <xv6/fs.h>

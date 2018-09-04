@@ -21,7 +21,7 @@
 #include "asm.h"
 #include "memlayout.h"
 #include "mmu.h"
-#include <xv6/param.h>
+#include "param.h"
 
 # マルチブートヘッダ。マルチブートローダへ向けるためのデータ。
 .p2align 2
