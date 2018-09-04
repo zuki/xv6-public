@@ -5,7 +5,6 @@
 #include "proc.h"
 #include <xv6/fs.h>
 #include "spinlock.h"
-#include "sleeplock.h"
 #include <sys/file.h>
 
 #define PIPESIZE 512

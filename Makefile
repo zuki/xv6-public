@@ -137,7 +137,7 @@ tags: $(OBJS) entryother.S _init
 vectors.S: vectors.pl
 	perl vectors.pl > vectors.S
 
-LIBC = lib/libc.o lib/usys.o
+LIBC = lib/libc.o lib/curses.o lib/usys.o
 LIBM =
 
 #ULIB = ulib.o usys.o printf.o umalloc.o

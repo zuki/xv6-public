@@ -1,4 +1,8 @@
 // 相互排他ロック
+#ifndef _XV6_SPINLOCK_H
+#define _XV6_SPINLOCK_H
+
+
 struct spinlock {
   uint locked;       // このロックは獲得済みか?
 
@@ -8,3 +12,5 @@ struct spinlock {
   uint pcs[10];      // このロックをロックしたコールスタック
                      // （プログラムカウンタの配列）
 };
+
+#endif

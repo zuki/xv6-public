@@ -1,3 +1,9 @@
+#ifndef _XV6_FILE_H
+#define _XV6_FILE_H
+
+#include <xv6/fs.h>
+#include "sleeplock.h"
+
 struct file {
   enum { FD_NONE, FD_PIPE, FD_INODE } type;
   int ref; // 参照カウント
@@ -30,8 +36,11 @@ struct inode {
 struct devsw {
   int (*read)(struct inode*, char*, int);
   int (*write)(struct inode*, char*, int);
+  int (*ioctl)(struct inode*, int);
 };
 
 extern struct devsw devsw[];
 
 #define CONSOLE 1
+
+#endif

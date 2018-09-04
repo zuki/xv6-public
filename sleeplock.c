@@ -1,5 +1,4 @@
 // スリープロック。
-
 #include <sys/types.h>
 #include "defs.h"
 #include <xv6/param.h>

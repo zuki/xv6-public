@@ -9,8 +9,8 @@
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
-//#include <termios.h>
-//#include <sys/ioctl.h>
+#include <termios.h>
+#include <sys/ioctl.h>
 
 
 #define max(m, n)   ((m) > (n) ? (m) : (n))
@@ -1121,7 +1121,7 @@ memmove(void *dst, const void *src, size_t n)
 
 
 /* termios.h */
-/*
+
 int tcgetattr(int fd, struct termios *termios_p)
 {
   return ioctl(fd, TCGETA, termios_p);
@@ -1137,4 +1137,3 @@ void cfmakeraw(struct termios *termios_p)
   // Ignore optional_actions
   termios_p->c_lflag = 0;
 }
-*/

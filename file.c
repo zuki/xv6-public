@@ -7,7 +7,6 @@
 #include <xv6/param.h>
 #include <xv6/fs.h>
 #include "spinlock.h"
-#include "sleeplock.h"
 #include <sys/file.h>
 
 struct devsw devsw[NDEV];

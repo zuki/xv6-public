@@ -1,6 +1,7 @@
 // ディスク上のファイルシステムフォーマット。
 // カーネルとユーザプログラムは共にこのヘッダファイルを使用する。
-
+#ifndef _XV6_FS_H
+#define _XV6_FS_H
 
 #define ROOTINO 1  // ルートinode番号
 #define BSIZE 512  // ブロックサイズ
@@ -54,3 +55,5 @@ struct dirent {
   ushort inum;
   char name[DIRSIZ];
 };
+
+#endif

@@ -1,5 +1,4 @@
 // 相互排他スピンロック。
-
 #include <sys/types.h>
 #include "defs.h"
 #include <xv6/param.h>

@@ -5,17 +5,15 @@
 //
 
 #include <sys/types.h>
-#include "defs.h"
-#include <xv6/param.h>
 #include <sys/stat.h>
+#include <sys/file.h>
 #include <fcntl.h>
+#include <xv6/fs.h>
+#include <xv6/param.h>
+#include "defs.h"
 #include "mmu.h"
 #include "proc.h"
-#include <xv6/fs.h>
 #include "spinlock.h"
-#include "sleeplock.h"
-#include <sys/file.h>
-
 
 // システムコールのn番目のワードサイズの引数をファイル記述子として取り出し、
 // その記述子と対応するfile構造体を返す。
@@ -443,4 +441,21 @@ sys_pipe(void)
   fd[0] = fd0;
   fd[1] = fd1;
   return 0;
+}
+
+int
+sys_ioctl(void)
+{
+  int fd;
+  struct file *f;
+  int request;
+
+  if(argfd(0, &fd, &f) < 0 || argint(1, &request) < 0)
+    return -1;
+  if(f->ip->type != T_DEV)
+    return -1;
+
+  if(f->ip->major < 0 || f->ip->major >= NDEV || !devsw[f->ip->major].ioctl)
+    return -1;
+  return devsw[f->ip->major].ioctl(f->ip, request);
 }

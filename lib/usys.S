@@ -29,6 +29,8 @@ SYSCALL(getpid)
 SYSCALL(sbrk)
 SYSCALL(sleep)
 SYSCALL(uptime)
+SYSCALL(ioctl)
+SYSCALL(procdump)
 
 .globl _exit
 _exit:

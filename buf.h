@@ -1,3 +1,8 @@
+#ifndef _XV6_BUF_H
+#define _XV6_BUF_H
+
+#include "sleeplock.h"
+
 struct buf {
   int flags;
   uint dev;
@@ -11,3 +16,5 @@ struct buf {
 };
 #define B_VALID 0x2  // バッファはディスクから読み込まれている
 #define B_DIRTY 0x4  // バッファをディスクに書き込む必要がある
+
+#endif
