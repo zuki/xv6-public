@@ -1,4 +1,4 @@
-#include "types.h"
+#include <sys/types.h>
 #include "x86.h"
 #include "defs.h"
 #include "kbd.h"

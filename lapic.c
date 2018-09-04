@@ -1,8 +1,8 @@
 // ローカルAPICは内部（非I/O）割り込みを管理する。
 // Intelプロセッサマニュアル第3巻の8章と付録Cを参照のこと。
 
-#include "param.h"
-#include "types.h"
+#include <xv6/param.h>
+#include <sys/types.h>
 #include "defs.h"
 #include "date.h"
 #include "memlayout.h"

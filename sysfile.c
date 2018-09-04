@@ -4,17 +4,18 @@
 // ほとんどの関数で引数をチェックする。
 //
 
-#include "types.h"
+#include <sys/types.h>
 #include "defs.h"
-#include "param.h"
-#include "stat.h"
+#include <xv6/param.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include "mmu.h"
 #include "proc.h"
-#include "fs.h"
+#include <xv6/fs.h>
 #include "spinlock.h"
 #include "sleeplock.h"
-#include "file.h"
-#include "fcntl.h"
+#include <sys/file.h>
+
 
 // システムコールのn番目のワードサイズの引数をファイル記述子として取り出し、
 // その記述子と対応するfile構造体を返す。

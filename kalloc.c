@@ -2,9 +2,9 @@
 // ページテーブルページ、パイプバッファのためのメモリの割り当てを行う。
 // 4096バイトのページを割り当てる
 
-#include "types.h"
+#include <sys/types.h>
 #include "defs.h"
-#include "param.h"
+#include <xv6/param.h>
 #include "memlayout.h"
 #include "mmu.h"
 #include "spinlock.h"

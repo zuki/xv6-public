@@ -18,12 +18,12 @@
 // * B_DIRTY: バッファデータは変更されており、
 //     ディスクに書き込む必要がある。
 
-#include "types.h"
+#include <sys/types.h>
 #include "defs.h"
-#include "param.h"
+#include <xv6/param.h>
 #include "spinlock.h"
 #include "sleeplock.h"
-#include "fs.h"
+#include <xv6/fs.h>
 #include "buf.h"
 
 struct {

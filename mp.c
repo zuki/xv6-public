@@ -2,9 +2,9 @@
 // MP記述構造体をメモリ上で探索する。
 // http://developer.intel.com/design/pentium/datashts/24201606.pdf
 
-#include "types.h"
+#include <sys/types.h>
 #include "defs.h"
-#include "param.h"
+#include <xv6/param.h>
 #include "memlayout.h"
 #include "mp.h"
 #include "x86.h"

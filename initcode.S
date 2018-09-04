@@ -1,7 +1,7 @@
 # 最初のプロセスは /init をexec。
 # このコードはユーザ空間で実行する。
 
-#include "syscall.h"
+#include <sys/syscall.h>
 #include "traps.h"
 
 

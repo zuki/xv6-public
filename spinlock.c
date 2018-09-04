@@ -1,8 +1,8 @@
 // 相互排他スピンロック。
 
-#include "types.h"
+#include <sys/types.h>
 #include "defs.h"
-#include "param.h"
+#include <xv6/param.h>
 #include "x86.h"
 #include "memlayout.h"
 #include "mmu.h"

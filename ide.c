@@ -1,8 +1,8 @@
 // 簡単なPIOベース（DMAを使用しない）IDEドライバのコード。
 
-#include "types.h"
+#include <sys/types.h>
 #include "defs.h"
-#include "param.h"
+#include <xv6/param.h>
 #include "memlayout.h"
 #include "mmu.h"
 #include "proc.h"
@@ -10,7 +10,7 @@
 #include "traps.h"
 #include "spinlock.h"
 #include "sleeplock.h"
-#include "fs.h"
+#include <xv6/fs.h>
 #include "buf.h"
 
 #define SECTOR_SIZE   512

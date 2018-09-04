@@ -8,17 +8,17 @@
 // このファイルには低レベルのファイルシステム操作関数が含まれている。
 // （高レベルの）システムコールの実装はsysfile.cにある。
 
-#include "types.h"
+#include <sys/types.h>
 #include "defs.h"
-#include "param.h"
-#include "stat.h"
+#include <xv6/param.h>
+#include <sys/stat.h>
 #include "mmu.h"
 #include "proc.h"
 #include "spinlock.h"
 #include "sleeplock.h"
-#include "fs.h"
+#include <xv6/fs.h>
 #include "buf.h"
-#include "file.h"
+#include <sys/file.h>
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 static void itrunc(struct inode*);

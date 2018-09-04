@@ -1,11 +1,11 @@
-#include "types.h"
+#include <sys/types.h>
 #include "defs.h"
-#include "param.h"
+#include <xv6/param.h>
 #include "memlayout.h"
 #include "mmu.h"
 #include "proc.h"
 #include "x86.h"
-#include "syscall.h"
+#include <sys/syscall.h>
 
 // ユーザコードは INT T_SYSCALL でシステムコールを行う。
 // システムコール番号は %eax におく。

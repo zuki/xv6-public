@@ -1,8 +1,8 @@
 // シェル
 
-#include "../types.h"
-#include "../user.h"
-#include "../fcntl.h"
+#include <sys/types.h>
+#include "user.h"
+#include <fcntl.h>
 
 // パース後のコマンド表現
 #define EXEC  1
