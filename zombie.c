@@ -1,7 +1,7 @@
 // Create a zombie process that
 // must be reparented at exit.
 
-#include <sys/types.h>
+#include "types.h"
 #include <sys/stat.h>
 #include "user.h"
 

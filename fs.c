@@ -8,7 +8,7 @@
 // このファイルには低レベルのファイルシステム操作関数が含まれている。
 // （高レベルの）システムコールの実装はsysfile.cにある。
 
-#include <sys/types.h>
+#include "types.h"
 #include "defs.h"
 #include <xv6/param.h>
 #include <sys/stat.h>

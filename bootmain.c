@@ -5,7 +5,7 @@
 // bootmain()は、ディスクのセクタ1からELFカーネルイメージをロードして、
 // カーネルのエントリルーチンにジャンプする。
 
-#include <sys/types.h>
+#include "types.h"
 #include "elf.h"
 #include "x86.h"
 #include "memlayout.h"

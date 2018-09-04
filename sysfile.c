@@ -4,7 +4,7 @@
 // ほとんどの関数で引数をチェックする。
 //
 
-#include <sys/types.h>
+#include "types.h"
 #include <sys/stat.h>
 #include "file.h"
 #include <fcntl.h>

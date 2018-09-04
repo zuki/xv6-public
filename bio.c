@@ -18,7 +18,7 @@
 // * B_DIRTY: バッファデータは変更されており、
 //     ディスクに書き込む必要がある。
 
-#include <sys/types.h>
+#include "types.h"
 #include "defs.h"
 #include <xv6/param.h>
 #include "spinlock.h"

@@ -1,7 +1,7 @@
 // Fake IDE disk; stores blocks in memory.
 // Useful for running kernel without scratch disk.
 
-#include <sys/types.h>
+#include "types.h"
 #include "defs.h"
 #include <xv6/param.h>
 #include "mmu.h"

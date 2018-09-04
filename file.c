@@ -2,7 +2,7 @@
 // ファイル記述子
 //
 
-#include <sys/types.h>
+#include "types.h"
 #include "defs.h"
 #include <xv6/param.h>
 #include <xv6/fs.h>

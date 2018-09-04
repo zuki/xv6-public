@@ -1,5 +1,5 @@
 #include <xv6/param.h>
-#include <sys/types.h>
+#include "types.h"
 #include <sys/stat.h>
 #include "user.h"
 #include <xv6/fs.h>

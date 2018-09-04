@@ -1,4 +1,4 @@
-#include <sys/types.h>
+#include "types.h"
 #include <xv6/param.h>
 #include "x86.h"
 #include "defs.h"

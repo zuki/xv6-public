@@ -13,17 +13,17 @@
 // mkfs はスーパーブロックを計算し、初期ファイルシステムを構築する。
 // スーパーブロックはディスクレイアウトを記述する:
 struct superblock {
-  uint size;         // ファイルシステムイメージのサイズ（単位はブロック）
-  uint nblocks;      // データブロックの数
-  uint ninodes;      // inodeの数
-  uint nlog;         // ログブロックの数
-  uint logstart;     // 先頭のログブロックのブロック番号
-  uint inodestart;   // 先頭のinodeブロックのブロック番号
-  uint bmapstart;    // 先頭の空きマップブロックのブロック番号
+  unsigned int size;         // ファイルシステムイメージのサイズ（単位はブロック）
+  unsigned int nblocks;      // データブロックの数
+  unsigned int ninodes;      // inodeの数
+  unsigned int nlog;         // ログブロックの数
+  unsigned int logstart;     // 先頭のログブロックのブロック番号
+  unsigned int inodestart;   // 先頭のinodeブロックのブロック番号
+  unsigned int bmapstart;    // 先頭の空きマップブロックのブロック番号
 };
 
 #define NDIRECT 12
-#define NINDIRECT (BSIZE / sizeof(uint))
+#define NINDIRECT (BSIZE / sizeof(unsigned int))
 #define MAXFILE (NDIRECT + NINDIRECT)
 
 // オンディスク inode 構造体
@@ -32,8 +32,8 @@ struct dinode {
   short major;          // メジャーデバイス番号（T_DEV のみ)
   short minor;          // マイナーデバイス番号 (T_DEV のみ)
   short nlink;          // ファイルシステム内のinodeへのリンクの数
-  uint size;            // ファイルのサイズ（単位はバイト）
-  uint addrs[NDIRECT+1];   // データブロックアドレス
+  unsigned int size;            // ファイルのサイズ（単位はバイト）
+  unsigned int addrs[NDIRECT+1];   // データブロックアドレス
 };
 
 // ブロックあたりのinode数
@@ -52,7 +52,7 @@ struct dinode {
 #define DIRSIZ 14
 
 struct dirent {
-  ushort inum;
+  unsigned short inum;
   char name[DIRSIZ];
 };
 

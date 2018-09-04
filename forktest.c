@@ -1,7 +1,7 @@
 // Test that fork fails gracefully.
 // Tiny executable so that the limit can be filling the proc table.
 
-#include <sys/types.h>
+#include "types.h"
 #include <sys/stat.h>
 #include "user.h"
 

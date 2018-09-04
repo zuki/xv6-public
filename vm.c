@@ -1,5 +1,5 @@
 #include <xv6/param.h>
-#include <sys/types.h>
+#include "types.h"
 #include "defs.h"
 #include "x86.h"
 #include "memlayout.h"

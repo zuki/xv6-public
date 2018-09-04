@@ -2,7 +2,7 @@
 // http://www.intel.com/design/chipsets/datashts/29056601.pdf
 // picirq.cも参照のこと。
 
-#include <sys/types.h>
+#include "types.h"
 #include "defs.h"
 #include "traps.h"
 

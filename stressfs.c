@@ -7,7 +7,7 @@
 //    for (i = 0; i < 40000; i++)
 //      asm volatile("");
 
-#include <sys/types.h>
+#include "types.h"
 #include <sys/stat.h>
 #include "user.h"
 #include <xv6/fs.h>

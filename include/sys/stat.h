@@ -8,9 +8,9 @@
 struct stat {
   short type;  // ファイルの種類
   int dev;     // ファイルシステムのディスク装置
-  uint ino;    // inode番号
+  unsigned int ino;    // inode番号
   short nlink; // ファイルへのリンク数
-  uint size;   // ファイルのサイズ（単位はバイト）
+  unsigned int size;   // ファイルのサイズ（単位はバイト）
 };
 
 #endif

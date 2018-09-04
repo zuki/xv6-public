@@ -1,4 +1,4 @@
-#include <sys/types.h>
+#include "types.h"
 #include "defs.h"
 #include <xv6/param.h>
 #include "memlayout.h"

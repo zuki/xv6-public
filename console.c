@@ -2,7 +2,7 @@
 // Input is from the keyboard or serial port.
 // Output is written to the screen and serial port.
 
-#include <sys/types.h>
+#include "types.h"
 #include "file.h"
 #include <sys/ioctl.h>
 #include <xv6/param.h>
