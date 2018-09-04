@@ -9,7 +9,7 @@
     ret
 
 SYSCALL(fork)
-SYSCALL(exit)
+#SYSCALL(exit)
 SYSCALL(wait)
 SYSCALL(pipe)
 SYSCALL(read)
@@ -29,3 +29,10 @@ SYSCALL(getpid)
 SYSCALL(sbrk)
 SYSCALL(sleep)
 SYSCALL(uptime)
+
+.globl _exit
+_exit:
+    movl $SYS_exit, %eax;
+    int $T_SYSCALL;
+    jmp _exit
+

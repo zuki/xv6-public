@@ -1,8 +1,8 @@
 #include <sys/types.h>
+#include <xv6/param.h>
 #include "x86.h"
 #include "defs.h"
 #include "date.h"
-#include <xv6/param.h>
 #include "memlayout.h"
 #include "mmu.h"
 #include "proc.h"

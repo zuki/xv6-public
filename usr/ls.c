@@ -1,7 +1,25 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "user.h"
 #include <xv6/fs.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+int
+stat(char *n, struct stat *st)
+{
+  int fd;
+  int r;
+
+  fd = open(n, O_RDONLY);
+  if(fd < 0)
+    return -1;
+  r = fstat(fd, st);
+  close(fd);
+  return r;
+}
 
 char*
 fmtname(char *path)
@@ -31,24 +49,24 @@ ls(char *path)
   struct stat st;
 
   if((fd = open(path, 0)) < 0){
-    printf(2, "ls: cannot open %s\n", path);
+    fprintf(stderr, "ls: cannot open %s\n", path);
     return;
   }
 
   if(fstat(fd, &st) < 0){
-    printf(2, "ls: cannot stat %s\n", path);
+    fprintf(stderr, "ls: cannot stat %s\n", path);
     close(fd);
     return;
   }
 
   switch(st.type){
   case T_FILE:
-    printf(1, "%s %d %d %d\n", fmtname(path), st.type, st.ino, st.size);
+    printf("%s %d %d %d\n", fmtname(path), st.type, st.ino, st.size);
     break;
 
   case T_DIR:
     if(strlen(path) + 1 + DIRSIZ + 1 > sizeof buf){
-      printf(1, "ls: path too long\n");
+      printf("ls: path too long\n");
       break;
     }
     strcpy(buf, path);
@@ -60,10 +78,10 @@ ls(char *path)
       memmove(p, de.name, DIRSIZ);
       p[DIRSIZ] = 0;
       if(stat(buf, &st) < 0){
-        printf(1, "ls: cannot stat %s\n", buf);
+        printf("ls: cannot stat %s\n", buf);
         continue;
       }
-      printf(1, "%s %d %d %d\n", fmtname(buf), st.type, st.ino, st.size);
+      printf("%s %d %d %d\n", fmtname(buf), st.type, st.ino, st.size);
     }
     break;
   }
@@ -77,9 +95,10 @@ main(int argc, char *argv[])
 
   if(argc < 2){
     ls(".");
-    exit();
+    exit(0);
   }
   for(i=1; i<argc; i++)
     ls(argv[i]);
-  exit();
+  exit(0);
+  return 0;
 }
