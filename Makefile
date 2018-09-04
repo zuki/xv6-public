@@ -82,6 +82,7 @@ CFLAGS += $(shell $(CC) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 &
 ASFLAGS = -m32 -gdwarf-2 -Wa,-divide
 # FreeBSD ld wants ``elf_i386_fbsd''
 LDFLAGS += -m $(shell $(LD) -V | grep elf_i386 2>/dev/null | head -n 1)
+VPATH = lib:usr
 
 xv6.img: bootblock kernel fs.img
 	dd if=/dev/zero of=xv6.img count=10000
@@ -159,21 +160,21 @@ mkfs: tools/mkfs.c fs.h
 .PRECIOUS: %.o
 
 UPROGS=\
-	_cat\
-	_echo\
-	_forktest\
-	_grep\
 	_init\
-	_kill\
-	_ln\
 	_ls\
-	_mkdir\
-	_rm\
 	_sh\
-	_stressfs\
-	_usertests\
-	_wc\
-	_zombie\
+#	_cat\
+#	_echo\
+#	_forktest\
+#	_grep\
+#	_kill\
+#	_ln\
+#	_mkdir\
+#	_rm\
+#	_stressfs\
+#	_usertests\
+#	_wc\
+#	_zombie\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
