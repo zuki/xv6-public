@@ -6,10 +6,10 @@
 #include <assert.h>
 
 #define stat xv6_stat  // avoid clash with host struct stat
-#include "../include/sys/types.h"
+#include "../types.h"
 #include "../include/xv6/fs.h"
 #include "../include/sys/stat.h"
-#include "../include/xv6/param.h"
+#include "../param.h"
 
 #ifndef static_assert
 #define static_assert(a, b) do { switch (0) case 0: case (a): ; } while (0)
