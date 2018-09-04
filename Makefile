@@ -7,7 +7,6 @@ OBJS = \
 	ide.o\
 	ioapic.o\
 	kalloc.o\
-	kbd.o\
 	lapic.o\
 	log.o\
 	main.o\

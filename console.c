@@ -1,14 +1,16 @@
-// コンソール入出力。
-// 入力はキーボードまたはシリアルポートから。
-// 出力はスクリーンとシリアルポートに書き込まれる。
+// Console input and output.
+// Input is from the keyboard or serial port.
+// Output is written to the screen and serial port.
 
 #include <sys/types.h>
-#include "defs.h"
+#include <sys/file.h>
+#include <sys/ioctl.h>
 #include <xv6/param.h>
+#include <xv6/fs.h>
+#include <termios.h>
+#include "defs.h"
 #include "traps.h"
 #include "spinlock.h"
-#include <xv6/fs.h>
-#include <sys/file.h>
 #include "memlayout.h"
 #include "mmu.h"
 #include "proc.h"
@@ -21,6 +23,7 @@ static int panicked = 0;
 static struct {
   struct spinlock lock;
   int locking;
+  struct termios termios;
 } cons;
 
 static void
@@ -35,21 +38,21 @@ printint(int xx, int base, int sign)
     x = -xx;
   else
     x = xx;
-                                    // -1234
-  i = 0;                            // buf = [4, 3, 2, 1, -]
+
+  i = 0;
   do{
     buf[i++] = digits[x % base];
   }while((x /= base) != 0);
 
   if(sign)
-    buf[i++] = '-';                 // buf[4] = '-', i = 5
+    buf[i++] = '-';
 
   while(--i >= 0)
-    consputc(buf[i]);               // putc => -1234
+    consputc(buf[i]);
 }
 //PAGEBREAK: 50
 
-// コンソールにプリントする。%d, %x, %p, %sのみ理解する。
+// Print to the console. only understands %d, %x, %p, %s.
 void
 cprintf(char *fmt, ...)
 {
@@ -91,7 +94,7 @@ cprintf(char *fmt, ...)
       consputc('%');
       break;
     default:
-      // 注意を引くために、未知の%シーケンスをプリントする。
+      // Print unknown % sequence to draw attention.
       consputc('%');
       consputc(c);
       break;
@@ -110,56 +113,21 @@ panic(char *s)
 
   cli();
   cons.locking = 0;
-  // mycpu()からpanicを呼べるように、lapiccpunumを使用する。
+  // use lapiccpunum so that we can call panic from mycpu()
   cprintf("lapicid %d: panic: ", lapicid());
   cprintf(s);
   cprintf("\n");
   getcallerpcs(&s, pcs);
   for(i=0; i<10; i++)
     cprintf(" %p", pcs[i]);
-  panicked = 1; // 他のCPUをフリーズさせる。
+  panicked = 1; // freeze other CPU
   for(;;)
     ;
 }
 
 //PAGEBREAK: 50
 #define BACKSPACE 0x100
-#define CRTPORT 0x3d4
-static ushort *crt = (ushort*)P2V(0xb8000);  // CGAメモリ
-
-static void
-cgaputc(int c)
-{
-  int pos;
-
-  // カーソル位置: col + 80*row.
-  outb(CRTPORT, 14);
-  pos = inb(CRTPORT+1) << 8;
-  outb(CRTPORT, 15);
-  pos |= inb(CRTPORT+1);
-
-  if(c == '\n')
-    pos += 80 - pos%80;
-  else if(c == BACKSPACE){
-    if(pos > 0) --pos;
-  } else
-    crt[pos++] = (c&0xff) | 0x0700;  // 白地に黒
-
-  if(pos < 0 || pos > 25*80)
-    panic("pos under/overflow");
-
-  if((pos/80) >= 24){  // スクロールアップ。
-    memmove(crt, crt+80, sizeof(crt[0])*23*80);
-    pos -= 80;
-    memset(crt+pos, 0, sizeof(crt[0])*(24*80 - pos));
-  }
-
-  outb(CRTPORT, 14);
-  outb(CRTPORT+1, pos>>8);
-  outb(CRTPORT, 15);
-  outb(CRTPORT+1, pos);
-  crt[pos] = ' ' | 0x0700;
-}
+#define C(x)  ((x)-'@')  // Control-x
 
 void
 consputc(int c)
@@ -172,63 +140,65 @@ consputc(int c)
 
   if(c == BACKSPACE){
     uartputc('\b'); uartputc(' '); uartputc('\b');
-  } else
+  } else {
     uartputc(c);
-  cgaputc(c);
+  }
+}
+
+void
+consechoc(int c)
+{
+  if(c != C('D') && cons.termios.c_lflag & ECHO)
+    consputc(c);
 }
 
 #define INPUT_BUF 128
 struct {
+  struct spinlock lock;
   char buf[INPUT_BUF];
-  uint r;  // 読み込みインデックス
-  uint w;  // 書き込みインデックス
-  uint e;  // 編集インデックス
+  uint r;  // Read index
+  uint w;  // Write index
+  uint e;  // Edit index
 } input;
-
-#define C(x)  ((x)-'@')  // Control-x
 
 void
 consoleintr(int (*getc)(void))
 {
-  int c, doprocdump = 0;
+  int c;
 
-  acquire(&cons.lock);
+  acquire(&input.lock);
   while((c = getc()) >= 0){
-    switch(c){
-    case C('P'):  // プロセス一覧を表示する。
-      // procdump() はcons.lockを間接的にロックする; 後で呼び出す。
-      doprocdump = 1;
-      break;
-    case C('U'):  // １行削除。
-      while(input.e != input.w &&
-            input.buf[(input.e-1) % INPUT_BUF] != '\n'){
-        input.e--;
-        consputc(BACKSPACE);
-      }
-      break;
-    case C('H'): case '\x7f':  // バックスペース
-      if(input.e != input.w){
-        input.e--;
-        consputc(BACKSPACE);
-      }
-      break;
-    default:
-      if(c != 0 && input.e-input.r < INPUT_BUF){
-        c = (c == '\r') ? '\n' : c;
-        input.buf[input.e++ % INPUT_BUF] = c;
-        consputc(c);
-        if(c == '\n' || c == C('D') || input.e == input.r+INPUT_BUF){
-          input.w = input.e;
-          wakeup(&input.r);
+    if(cons.termios.c_lflag & ICANON){
+      switch(c){
+      case C('P'):  // Process listing.
+        procdump();
+        continue;
+      case C('U'):  // Kill line.
+        while(input.e != input.w &&
+              input.buf[(input.e-1) % INPUT_BUF] != '\n'){
+          input.e--;
+          consechoc(BACKSPACE);
         }
+        continue;
+      case C('H'): case '\x7f':  // Backspace
+        if(input.e != input.w){
+          input.e--;
+          consechoc(BACKSPACE);
+        }
+        continue;
       }
-      break;
+    }
+    if(c != 0 && input.e-input.r < INPUT_BUF){
+      c = (c == '\r') ? '\n' : c;
+      input.buf[input.e++ % INPUT_BUF] = c;
+      consechoc(c);
+      if(c == '\n' || c == C('D') || input.e == input.r+INPUT_BUF || (cons.termios.c_lflag & ICANON) == 0){
+        input.w = input.e;
+        wakeup(&input.r);
+      }
     }
   }
-  release(&cons.lock);
-  if(doprocdump) {
-    procdump();  // ここでprocdump()を呼び出す。cons.lockが保持される。
-  }
+  release(&input.lock);
 }
 
 int
@@ -239,31 +209,31 @@ consoleread(struct inode *ip, char *dst, int n)
 
   iunlock(ip);
   target = n;
-  acquire(&cons.lock);
+  acquire(&input.lock);
   while(n > 0){
     while(input.r == input.w){
       if(myproc()->killed){
-        release(&cons.lock);
+        release(&input.lock);
         ilock(ip);
         return -1;
       }
-      sleep(&input.r, &cons.lock);
+      sleep(&input.r, &input.lock);
     }
     c = input.buf[input.r++ % INPUT_BUF];
-    if(c == C('D')){  // EOF
+    if(c == C('D') && cons.termios.c_lflag & ICANON){  // EOF
       if(n < target){
-        // 次回、呼び出し側が0バイトの結果を得られるように、
-        // ^D を保存する。
+        // Save ^D for next time, to make sure
+        // caller gets a 0-byte result.
         input.r--;
       }
       break;
     }
     *dst++ = c;
     --n;
-    if(c == '\n')
+    if(c == '\n' && cons.termios.c_lflag & ICANON)
       break;
   }
-  release(&cons.lock);
+  release(&input.lock);
   ilock(ip);
 
   return target - n;
@@ -284,14 +254,33 @@ consolewrite(struct inode *ip, char *buf, int n)
   return n;
 }
 
+int
+consoleioctl(struct inode *ip, int req)
+{
+  struct termios *termios_p;
+  if(req != TCGETA && req != TCSETA)
+    return -1;
+  if(argptr(2, (void*)&termios_p, sizeof(*termios_p)) < 0)
+    return -1;
+  if(req == TCGETA)
+    *termios_p = cons.termios;
+  else
+    cons.termios = *termios_p;
+
+  return 0;
+}
+
 void
 consoleinit(void)
 {
   initlock(&cons.lock, "console");
+  initlock(&input.lock, "input");
 
   devsw[CONSOLE].write = consolewrite;
-  devsw[CONSOLE].read = consoleread;
-  cons.locking = 1;
+  devsw[CONSOLE].read  = consoleread;
+  devsw[CONSOLE].ioctl = consoleioctl;
 
-  ioapicenable(IRQ_KBD, 0);
+  cons.termios.c_lflag = ECHO | ICANON;
+  cons.locking = 1;
 }
+

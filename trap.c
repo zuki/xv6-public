@@ -63,10 +63,6 @@ trap(struct trapframe *tf)
   case T_IRQ0 + IRQ_IDE+1:
     // BochsはスプリアスIDE1割り込みを生成する。
     break;
-  case T_IRQ0 + IRQ_KBD:
-    kbdintr();
-    lapiceoi();
-    break;
   case T_IRQ0 + IRQ_COM1:
     uartintr();
     lapiceoi();
