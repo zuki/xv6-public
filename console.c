@@ -3,7 +3,7 @@
 // Output is written to the screen and serial port.
 
 #include <sys/types.h>
-#include <sys/file.h>
+#include "file.h"
 #include <sys/ioctl.h>
 #include <xv6/param.h>
 #include <xv6/fs.h>

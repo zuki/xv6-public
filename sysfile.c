@@ -6,7 +6,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/file.h>
+#include "file.h"
 #include <fcntl.h>
 #include <xv6/fs.h>
 #include <xv6/param.h>
