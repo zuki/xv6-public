@@ -610,5 +610,4 @@ int main(int argc, char *argv[]){
   cleanup();
 
   exit(0);
-  return 0;
 }

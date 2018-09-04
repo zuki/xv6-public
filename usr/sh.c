@@ -168,7 +168,6 @@ main(void)
 
   free_history();
   exit(0);
-  return 0;
 }
 
 void

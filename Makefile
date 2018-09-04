@@ -75,8 +75,8 @@ AS = $(TOOLPREFIX)gas
 LD = $(TOOLPREFIX)ld
 OBJCOPY = $(TOOLPREFIX)objcopy
 OBJDUMP = $(TOOLPREFIX)objdump
-CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -O2 -Wall -MD -ggdb -m32 -Werror -fno-omit-frame-pointer -I. -I./include
-#CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -fvar-tracking -fvar-tracking-assignments -O0 -g -Wall -MD -gdwarf-2 -m32 -Werror -fno-omit-frame-pointer
+#CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -O2 -Wall -MD -ggdb -m32 -Werror -fno-omit-frame-pointer -I. -I./include
+CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -O2 -Wall -MD -ggdb -m32 -Werror -Wno-return-type -fno-omit-frame-pointer -I. -I./include
 CFLAGS += $(shell $(CC) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 && echo -fno-stack-protector)
 ASFLAGS = -m32 -gdwarf-2 -Wa,-divide -I. -I./include
 # FreeBSD ld wants ``elf_i386_fbsd''
@@ -167,16 +167,17 @@ UPROGS=\
 	_sh\
 	_vi\
 	_cat\
-#	_echo\
+	_echo\
+	_grep\
+	_kill\
+	_ln\
+	_mkdir\
+	_rm\
+	_wc\
 #	_forktest\
-#	_grep\
-#	_kill\
-#	_ln\
-#	_mkdir\
-#	_rm\
 #	_stressfs\
 #	_usertests\
-#	_wc\
+
 #	_zombie\
 
 fs.img: mkfs README $(UPROGS)

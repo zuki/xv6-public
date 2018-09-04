@@ -1,8 +1,11 @@
 // Simple grep.  Only supports ^ . * $ operators.
 
-#include "types.h"
-#include <sys/stat.h>
-#include "user.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 char buf[1024];
 int match(char*, char*);
@@ -42,25 +45,25 @@ main(int argc, char *argv[])
   char *pattern;
 
   if(argc <= 1){
-    printf(2, "usage: grep pattern [file ...]\n");
-    exit();
+    fprintf(stderr, "usage: grep pattern [file ...]\n");
+    exit(1);
   }
   pattern = argv[1];
 
   if(argc <= 2){
     grep(pattern, 0);
-    exit();
+    exit(0);
   }
 
   for(i = 2; i < argc; i++){
     if((fd = open(argv[i], 0)) < 0){
-      printf(1, "grep: cannot open %s\n", argv[i]);
-      exit();
+      fprintf(stderr, "grep: cannot open %s\n", argv[i]);
+      exit(1);
     }
     grep(pattern, fd);
     close(fd);
   }
-  exit();
+  exit(0);
 }
 
 // Regexp matcher from Kernighan & Pike,
