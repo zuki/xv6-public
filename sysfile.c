@@ -321,12 +321,21 @@ sys_open(void)
     end_op();
     return -1;
   }
+
+  f->off = 0;
+  if (ip->type == T_FILE) {
+    if (omode == (O_WRONLY|O_CREATE|O_APPEND))
+      f->off = ip->size;
+    else if (omode == (O_WRONLY|O_CREATE)) {
+      ip->size = 0;
+      iupdate(ip);
+    }
+  }
   iunlock(ip);
   end_op();
 
   f->type = FD_INODE;
   f->ip = ip;
-  f->off = 0;
   f->readable = !(omode & O_WRONLY);
   f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
   return fd;
@@ -458,4 +467,54 @@ sys_ioctl(void)
   if(f->ip->major < 0 || f->ip->major >= NDEV || !devsw[f->ip->major].ioctl)
     return -1;
   return devsw[f->ip->major].ioctl(f->ip, request);
+}
+
+int
+sys_lseek(void)
+{
+  struct file *f;         // 引数1でfdとして指定
+  int offset;             // 引数2で指定
+  int whence;             // 引数3で指定
+  int size;               // ファイルサイズ（とりあえずファイルサイズに収まらない場合はエラー）
+  struct inode *ip;
+
+  if(argfd(0, 0, &f) < 0 || argint(1, &offset) < 0 || argint(2, &whence) < 0)
+    return -1;
+
+  ip = f->ip;
+  ilock(ip);
+  if (ip->type != T_FILE) {
+    iunlock(ip);
+    return -1;
+  }
+
+  size = ip->size;
+  switch (whence) {
+    case SEEK_SET:
+      if (offset < 0 || offset > size) {
+        iunlock(ip);
+        return -1;
+      }
+      f->off = offset;
+      break;
+    case SEEK_CUR:
+      if (f->off + offset < 0 || f->off + offset > size) {
+        iunlock(ip);
+        return -1;
+      }
+      f->off = f->off + offset;
+      break;
+    case SEEK_END:
+      if (size + offset < 0 || size + offset > size) {
+        iunlock(ip);
+        return -1;
+      }
+      f->off = size + offset;
+      break;
+    default:
+      iunlock(ip);
+      return -1;
+  }
+  iunlock(ip);
+  return 0;
 }

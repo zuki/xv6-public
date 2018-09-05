@@ -28,5 +28,6 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 int halt(void);
+int lseek(int, int, int);
 
 #endif  /* unistd.h */

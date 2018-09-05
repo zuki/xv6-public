@@ -31,6 +31,7 @@ SYSCALL(sleep)
 SYSCALL(uptime)
 SYSCALL(ioctl)
 SYSCALL(procdump)
+SYSCALL(lseek)
 
 .globl _exit
 _exit:
