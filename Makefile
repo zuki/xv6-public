@@ -175,6 +175,7 @@ UPROGS=\
 	_rm\
 	_wc\
 	_sort\
+	_uniq\
 #	_forktest\
 #	_stressfs\
 #	_usertests\
