@@ -174,14 +174,15 @@ UPROGS=\
 	_mkdir\
 	_rm\
 	_wc\
+	_sort\
 #	_forktest\
 #	_stressfs\
 #	_usertests\
 
 #	_zombie\
 
-fs.img: mkfs README $(UPROGS)
-	./mkfs fs.img README $(UPROGS)
+fs.img: mkfs README EXAMPLE $(UPROGS)
+	./mkfs fs.img README EXAMPLE $(UPROGS)
 
 -include *.d
 
