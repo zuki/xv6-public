@@ -13,4 +13,6 @@ struct stat {
   unsigned int size;   // ファイルのサイズ（単位はバイト）
 };
 
+int stat(char *, struct stat *s);
+
 #endif

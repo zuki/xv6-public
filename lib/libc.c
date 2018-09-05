@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <termios.h>
 #include <sys/ioctl.h>
+#include <sys/stat.h>
 
 
 #define max(m, n)   ((m) > (n) ? (m) : (n))
@@ -1136,4 +1137,18 @@ void cfmakeraw(struct termios *termios_p)
 {
   // Ignore optional_actions
   termios_p->c_lflag = 0;
+}
+
+int
+stat(char *n, struct stat *st)
+{
+  int fd;
+  int r;
+
+  fd = open(n, O_RDONLY);
+  if(fd < 0)
+    return -1;
+  r = fstat(fd, st);
+  close(fd);
+  return r;
 }
