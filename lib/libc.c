@@ -91,6 +91,20 @@ FILE *fopen(const char *name, const char *mode)
 
 }
 
+FILE *freopen(const char *path, const char *mode, FILE *stream) {
+  int fd;
+  FILE *fp;
+
+  if ((fp = fopen(path, mode)) == NULL)
+    return NULL;
+
+  if ((fd = dup2(fp->fd, stream->fd)) < 0)
+    return NULL;
+
+  fp->fd = fd;
+  return fp;
+}
+
 int fclose(FILE *fp) {
   fflush(fp);
   fp->flag = 0;
