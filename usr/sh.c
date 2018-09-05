@@ -387,8 +387,8 @@ parseredirs(struct cmd *cmd, char **ps, char *es)
     case '>':
       cmd = redircmd(cmd, q, eq, O_WRONLY|O_CREATE, 1);
       break;
-    case '+':  // >>             これでは追加にならないのでは。O_CREATEは不要?
-      cmd = redircmd(cmd, q, eq, O_WRONLY|O_CREATE, 1);
+    case '+':  // >> これでは追加にならないのでは。lseekシステムコールとO_APPENDモードを追加
+      cmd = redircmd(cmd, q, eq, O_WRONLY|O_CREATE|O_APPEND, 1);
       break;
     }
   }
