@@ -23,3 +23,4 @@
 #define SYS_ioctl  22
 #define SYS_procdump 23
 #define SYS_lseek  24
+#define SYS_dup2   25

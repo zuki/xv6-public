@@ -106,6 +106,7 @@ extern int sys_uptime(void);
 extern int sys_ioctl(void);
 extern int sys_procdump(void);
 extern int sys_lseek(void);
+extern int sys_dup2(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -132,6 +133,7 @@ static int (*syscalls[])(void) = {
 [SYS_ioctl]   sys_ioctl,
 [SYS_procdump]   sys_procdump,
 [SYS_lseek]   sys_lseek,
+[SYS_dup2]    sys_dup2,
 };
 
 void

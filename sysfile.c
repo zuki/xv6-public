@@ -66,6 +66,23 @@ sys_dup(void)
 }
 
 int
+sys_dup2(void)
+{
+  struct file *of, *nf;
+  int ofd, nfd;
+
+  if(argfd(0, &ofd, &of) < 0 || argfd(1, &nfd, &nf) < 0)  // 引数1, 2で指定されたofd, nfdを取得する
+    return -1;
+  if (ofd == nfd)             // ofdとnfdが同じ場合はnfdを返す
+    return nfd;
+  if(nf->ref > 0)             // nfdが使われていたら閉じる
+    fileclose(nf);
+  myproc()->ofile[nfd] = of;  // nfdを再利用する
+  filedup(of);                // ofの参照カウントをインクリメント
+  return nfd;                 // nfdを返す
+}
+
+int
 sys_read(void)
 {
   struct file *f;         // 引数1でfdとして指定

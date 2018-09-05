@@ -23,6 +23,7 @@ int link(char*, char*);
 int mkdir(char*);
 int chdir(char*);
 int dup(int);
+int dup2(int, int);
 int getpid(void);
 char* sbrk(int);
 int sleep(int);
