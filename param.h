@@ -10,4 +10,4 @@
 #define MAXOPBLOCKS  10  // FS操作関数が書き込み可能な最大ブロック数
 #define LOGSIZE      (MAXOPBLOCKS*3)  // オンディスクログの最大データブロック
 #define NBUF         (MAXOPBLOCKS*3)  // ディスクブロックキャッシュのサイズ
-#define FSSIZE    40000  // ファイルシステムのサイズ（単位はブロック）
+#define FSSIZE   100000  // ファイルシステムのサイズ（単位はブロック）

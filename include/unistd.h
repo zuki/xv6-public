@@ -31,4 +31,6 @@ int uptime(void);
 int halt(void);
 int lseek(int, int, int);
 
+int	 getopt(int, char * const *, const char *);
+
 #endif  /* unistd.h */

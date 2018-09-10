@@ -81,7 +81,7 @@ CFLAGS += $(shell $(CC) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 &
 ASFLAGS = -m32 -gdwarf-2 -Wa,-divide -I. -I./include
 # FreeBSD ld wants ``elf_i386_fbsd''
 LDFLAGS += -m $(shell $(LD) -V | grep elf_i386 2>/dev/null | head -n 1)
-VPATH = lib:usr
+VPATH = lib:usr:usr/hexdump
 
 xv6.img: bootblock kernel fs.img
 	dd if=/dev/zero of=xv6.img count=10000
@@ -152,6 +152,14 @@ _forktest: forktest.o $(LIBC)
 	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o _forktest forktest.o ulib.o usys.o
 	$(OBJDUMP) -S _forktest > forktest.asm
 
+HEXDUMP_OBJS = usr/hexdump/conv.o usr/hexdump/display.o usr/hexdump/hexdump.o usr/hexdump/hexsyntax.o usr/hexdump/odsyntax.o usr/hexdump/parse.o
+
+_hexdump: $(HEXDUMP_OBJS) $(LIBC)
+	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o $@ $(HEXDUMP_OBJS) $(LIBC)
+
+_od: _hexdump
+	cp _hexdump _od
+
 mkfs: tools/mkfs.c
 	gcc -Werror -Wall -o mkfs tools/mkfs.c
 
@@ -179,11 +187,10 @@ UPROGS=\
 #	_forktest\
 #	_stressfs\
 #	_usertests\
-
 #	_zombie\
 
-fs.img: mkfs README EXAMPLE $(UPROGS)
-	./mkfs fs.img README EXAMPLE $(UPROGS)
+fs.img: mkfs README EXAMPLE $(UPROGS) _hexdump _od
+	./mkfs fs.img README EXAMPLE $(UPROGS) _hexdump _od
 
 -include *.d
 

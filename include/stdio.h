@@ -71,10 +71,12 @@ char *gets(char *);
 FILE *fopen(const char *, const char *);
 FILE *freopen(const char *, const char *, FILE *);
 int fclose(FILE *);
+int fseek(FILE *, long, int);
 
 int printf(const char *, ...);
 int fprintf(FILE *, const char *, ...);
 int vprintf(const char *, va_list);
 int vfprintf(FILE *, const char *, va_list);
+int sprintf(char *, const char *, ...);
 
 #endif  /* stdio.h */

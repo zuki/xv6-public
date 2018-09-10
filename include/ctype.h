@@ -9,5 +9,6 @@ int isspace(int);
 int isupper(int);
 int tolower(int);
 int toupper(int);
+int isprint(int);
 
 #endif  /* ctype.h */

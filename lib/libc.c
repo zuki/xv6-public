@@ -39,6 +39,7 @@ int isspace(int c) { return c == ' ' || ('\t' <= c && c <= '\r'); }
 int isupper(int c) { return 'A' <= c && c <= 'Z'; }
 int tolower(int c) { return isupper(c) ? c - 'A' + 'a' : c; }
 int toupper(int c) { return islower(c) ? c - 'a' + 'A' : c; }
+int isprint(int c) { return ' ' <= c && c <= '~'; }
 
 
 
@@ -112,6 +113,10 @@ int fclose(FILE *fp) {
   return close(fp->fd);
 }
 
+int fseek(FILE *fp, long offset, int whence)
+{
+  return lseek(fp->fd, (int)offset, whence);
+}
 
 int _fillbuf(FILE *fp) {
   int bufsize;
@@ -312,7 +317,6 @@ char *gets(char *s)
   return (c == EOF && buf == s) ? NULL : s;
 
 }
-
 
 #define LEFT      (1 << 0)
 #define ZEROPAD   (1 << 1)
@@ -671,6 +675,22 @@ int fprintf(FILE *fp, const char *fmt, ...)
   va_list ap;
   va_start(ap, fmt);
   return vfprintf(fp, fmt, ap);
+}
+
+int sprintf(char *str, const char *fmt, ...)
+{
+  int ret;
+  va_list ap;
+  FILE f;
+
+  f.flag = _READ | _WRITE;
+  f.base = f.ptr = str;
+  f.cnt = INT_MAX;
+
+  va_start(ap, fmt);
+  ret = vfprintf(&f, fmt, ap);
+  *f.ptr = 0;
+  return(ret);
 }
 
 
@@ -1046,6 +1066,31 @@ size_t strlen(const char *str)
   return len;
 }
 
+char *index(register const char *p, int ch)
+{
+  for (;; ++p) {
+    if (*p == ch)
+      return((char *)p);
+    if (!*p)
+      return((char *)NULL);
+  }
+  /* NOTREACHED */
+}
+
+char * rindex(register const char *p, int ch)
+{
+  register char *save;
+
+  for (save = NULL;; ++p) {
+    if (*p == ch)
+      save = (char *)p;
+    if (!*p)
+      return(save);
+  }
+  /* NOTREACHED */
+}
+
+
 int strcmp(const char *l, const char *r)
 {
   while (*l) {
@@ -1093,6 +1138,19 @@ char *strncpy(char *dst, const char *src, size_t n)
   return dst;
 }
 
+char *strdup(const char *str)
+{
+  size_t len;
+	char *copy;
+
+	len = strlen(str) + 1;
+	if (!(copy = malloc(len)))
+		return((char *)NULL);
+	memcpy(copy, str, len);
+	return(copy);
+
+}
+
 void *memset(void *dst, int c, size_t n)
 {
   char *d = dst;
@@ -1134,6 +1192,19 @@ memmove(void *dst, const void *src, size_t n)
   return dst;
 }
 
+int memcmp(const void *s1, const void *s2, size_t n)
+{
+  if (n != 0) {
+    register const unsigned char *p1 = s1, *p2 = s2;
+
+    do {
+    	if (*p1++ != *p2++)
+    		return (*--p1 - *--p2);
+    } while (--n != 0);
+  }
+  return (0);
+
+}
 
 /* termios.h */
 
@@ -1165,4 +1236,82 @@ stat(char *n, struct stat *st)
   r = fstat(fd, st);
   close(fd);
   return r;
+}
+
+/* unistd.h */
+
+int	opterr = 1,		/* if error message should be printed */
+	optind = 1,		/* index into parent argv vector */
+	optopt,			/* character checked for validity */
+	optreset;		/* reset getopt */
+char	*optarg;		/* argument associated with option */
+
+#define	BADCH	(int)'?'
+#define	BADARG	(int)':'
+#define	EMSG	""
+
+/*
+ * getopt --
+ *	Parse argc/argv argument vector.
+ */
+int
+getopt(int nargc, char * const *nargv, const char *ostr)
+{
+
+	//extern char *__progname;
+	static char *place = EMSG;		/* option letter processing */
+	char *oli;				/* option letter list index */
+
+	if (optreset || !*place) {		/* update scanning pointer */
+		optreset = 0;
+		if (optind >= nargc || *(place = nargv[optind]) != '-') {
+			place = EMSG;
+			return (-1);
+		}
+		if (place[1] && *++place == '-') {	/* found "--" */
+			++optind;
+			place = EMSG;
+			return (-1);
+		}
+	}					/* option letter okay? */
+	if ((optopt = (int)*place++) == (int)':' || !(oli = strchr(ostr, optopt))) {
+		/*
+		 * if the user didn't specify '-' as an option,
+		 * assume it means -1.
+		 */
+		if (optopt == (int)'-')
+			return (-1);
+		if (!*place)
+			++optind;
+		if (opterr && *ostr != ':')
+			(void)fprintf(stderr,
+//			    "%s: illegal option -- %c\n", __progname, optopt);
+			    "illegal option -- %c\n", optopt);
+		return (BADCH);
+	}
+	if (*++oli != ':') {			/* don't need argument */
+		optarg = NULL;
+		if (!*place)
+			++optind;
+	}
+	else {					/* need an argument */
+		if (*place)			/* no white space */
+			optarg = place;
+		else if (nargc <= ++optind) {	/* no arg */
+			place = EMSG;
+			if (*ostr == ':')
+				return (BADARG);
+			if (opterr)
+				(void)fprintf(stderr,
+//				    "%s: option requires an argument -- %c\n",
+//				    __progname, optopt);
+				    "option requires an argument -- %c\n", optopt);
+			return (BADCH);
+		}
+	 	else				/* white space */
+			optarg = nargv[optind];
+		place = EMSG;
+		++optind;
+	}
+	return (optopt);			/* dump back option letter */
 }
